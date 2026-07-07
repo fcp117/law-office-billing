@@ -57,7 +57,7 @@ const deleteEvent = (event) => {
                 </h2>
                 
                 <Link :href="route('client-list')" 
-                      class="bg-green-100 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition shadow-sm">
+                      class="text-blue-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition shadow-sm">
                     Manage Clients
                 </Link>
             </div>
