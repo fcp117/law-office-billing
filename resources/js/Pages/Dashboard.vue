@@ -6,12 +6,14 @@ import { ref } from 'vue';
 // Import our new Dashboard Modals
 import DashboardTaskModal from '@/Components/DashboardTaskModal.vue';
 import DashboardEventModal from '@/Components/DashboardEventModal.vue';
+import DashboardMatterModal from '@/Components/DashboardMatterModal.vue';
 
 defineProps({
     kpis: Object,
     events: Array,
     tasks: Array,
-    matters: Array
+    matters: Array,
+    clients: Array
 });
 
 // --- Tasks Logic ---
@@ -43,6 +45,8 @@ const deleteEvent = (event) => {
         router.delete(route('events.destroy', event.id), { preserveScroll: true });
     }
 };
+
+const isMatterModalOpen = ref(false);
 </script>
 
 <template>
@@ -163,8 +167,13 @@ const deleteEvent = (event) => {
                         </div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-lg shadow h-fit">
-                        <h2 class="text-lg font-bold mb-4 border-b pb-2">My Active Matters</h2>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex justify-between items-center mb-4 border-b pb-2">
+                            <h2 class="text-lg font-bold mb-4 border-b pb-2">My Active Matters</h2>
+                            <button @click="isMatterModalOpen = true" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200">
+                                    + Add Matter
+                            </button>
+                        </div>
                         <div class="max-h-[46rem] overflow-y-auto pr-2">
                             <ul class="space-y-2">
                                 <li v-for="matter in matters" :key="matter.id">
@@ -197,6 +206,14 @@ const deleteEvent = (event) => {
             :event="selectedEvent"
             @close="isEventModalOpen = false" 
         />
+
+        <DashboardMatterModal 
+            :show="isMatterModalOpen" 
+            :clients="clients"
+            @close="isMatterModalOpen = false" 
+        />
+
+
         
     </AuthenticatedLayout>
 </template>

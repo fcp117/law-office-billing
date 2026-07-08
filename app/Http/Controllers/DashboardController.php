@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
 use App\Models\TimeEntry;
+use App\Models\Client;
 
 class DashboardController extends Controller
 {
@@ -45,6 +46,9 @@ class DashboardController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // 4. Fetch Clients (for the "Add Matter" button)
+        $clients = \App\Models\Client::orderBy('name', 'asc')->get();
+
         return Inertia::render('Dashboard', [
             'kpis' => [
                 'hours' => $totalHours,
@@ -53,7 +57,8 @@ class DashboardController extends Controller
             ],
             'events' => $events,
             'tasks' => $tasks,
-            'matters' => $matters
+            'matters' => $matters,
+            'clients' => $clients
         ]);
     }
 }
