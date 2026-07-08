@@ -48,7 +48,13 @@ class MatterController extends Controller
         ]);
 
         // 2. Create the new Matter in the database
-        Matter::create($validated);
+        $matter = Matter::create($validated);
+
+        $user = $request->user();
+
+        $matter->users()->attach($user->id, [
+            'assignment_role' => $user->role
+        ]);
 
         // 3. Send the user back so Inertia can refresh the ClientShow page automatically
         return redirect()->back();
