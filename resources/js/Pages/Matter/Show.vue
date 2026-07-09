@@ -7,9 +7,11 @@ import { ref } from 'vue';
 import TaskModal from '@/Components/TaskModal.vue';
 import EventModal from '@/Components/EventModal.vue';
 
+import TimeEntryModal from '@/Components/TimeEntryModal.vue';
+
 const props = defineProps({
     matter: Object
-});
+    });
 
 // ==========================================
 // 1. INVOICING & PAYMENTS LOGIC
@@ -22,7 +24,7 @@ const form = useForm({
     payment_date: new Date().toISOString().split('T')[0],
     payment_method: 'Bank Transfer',
     reference_number: '',
-});
+    });
 
 const openPaymentModal = (invoice) => {
     selectedInvoice.value = invoice;
@@ -42,6 +44,20 @@ const submitPayment = () => {
         preserveScroll: true,
         onSuccess: () => closePaymentModal(),
     });
+};
+
+const isTimeEntryModalOpen = ref(false);
+const selectedTimeEntry = ref(null);
+
+const openTimeEntryModal = (entry = null) => {
+    selectedTimeEntry.value = entry;
+    isTimeEntryModalOpen.value = true;
+};
+
+const deleteTimeEntry = (entry) => {
+    if (confirm(`Delete this time entry of ${entry.hours} hours?`)) {
+        router.delete(route('time-entries.destroy', entry.id), { preserveScroll: true });
+    }
 };
 
 // ==========================================
@@ -213,6 +229,11 @@ const deleteEvent = (event) => {
                     <div class="bg-white p-6 rounded-lg shadow">
                         <div class="flex justify-between items-center border-b pb-2 mb-4">
                             <h2 class="text-xl font-bold">Time Entries (Running Billable)</h2>
+                            <div class="space-x-3">
+                                <button @click="openTimeEntryModal()" class="bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded text-sm font-semibold hover:bg-purple-200 transition">
+                                    + Log Hours
+                                </button>
+                            </div>
                             <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-blue-700 transition">
                                 Generate Invoice
                             </button>
@@ -370,6 +391,13 @@ const deleteEvent = (event) => {
             :matter-id="matter.id"
             :event="selectedEvent"
             @close="isEventModalOpen = false" 
+        />
+
+        <TimeEntryModal 
+            :show="isTimeEntryModalOpen" 
+            :matter-id="matter.id"
+            :time-entry="selectedTimeEntry"
+            @close="isTimeEntryModalOpen = false" 
         />
 
 </template>

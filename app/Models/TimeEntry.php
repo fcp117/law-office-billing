@@ -8,7 +8,7 @@ class TimeEntry extends Model
 {
     protected $fillable = [
         'user_id', 'matter_id', 'description', 'start_time', 'end_time', 
-        'hours', 'hourly_rate', 'amount', 'invoice_id', 'created_by', 'modified_by'
+        'hours', 'hourly_rate', 'amount', 'billable_id', 'billable_type', 'invoice_id', 'created_by', 'modified_by'
     ];
 
     protected $casts = [

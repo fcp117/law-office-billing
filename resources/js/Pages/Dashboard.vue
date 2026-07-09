@@ -7,6 +7,7 @@ import { ref } from 'vue';
 import DashboardTaskModal from '@/Components/DashboardTaskModal.vue';
 import DashboardEventModal from '@/Components/DashboardEventModal.vue';
 import DashboardMatterModal from '@/Components/DashboardMatterModal.vue';
+import DashboardTimeEntryModal from '@/Components/DashboardTimeEntryModal.vue';
 
 defineProps({
     kpis: Object,
@@ -47,6 +48,14 @@ const deleteEvent = (event) => {
 };
 
 const isMatterModalOpen = ref(false);
+
+const isTimeEntryModalOpen = ref(false);
+const selectedTimeEntry = ref(null);
+
+const openTimeEntryModal = (entry = null) => {
+    selectedTimeEntry.value = entry;
+    isTimeEntryModalOpen.value = true;
+};
 </script>
 
 <template>
@@ -85,9 +94,14 @@ const isMatterModalOpen = ref(false);
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <h3 class="text-gray-500 text-sm font-semibold">Billable Hours (This Month)</h3>
-                        <p class="text-3xl font-bold text-gray-900">{{ kpis.hours }}</p>
+                    <div class="bg-white p-6 rounded-lg shadow flex justify-between items-start">
+                        <div>
+                            <h3 class="text-gray-500 text-sm font-semibold">Billable Hours (This Month)</h3>
+                            <p class="text-3xl font-bold text-gray-900">{{ kpis.hours }}</p>
+                        </div>
+                        <button @click="openTimeEntryModal()" class="bg-purple-100 text-purple-700 px-3 py-1.5 rounded text-sm font-semibold hover:bg-purple-200 transition border border-purple-200">
+                            + Log Time
+                        </button>
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow border-b-4 border-green-500">
                         <h3 class="text-gray-500 text-sm font-semibold">Billed Amount</h3>
@@ -97,6 +111,7 @@ const isMatterModalOpen = ref(false);
                         <h3 class="text-gray-500 text-sm font-semibold">Unbilled Amount</h3>
                         <p class="text-3xl font-bold text-gray-900">Php {{ kpis.unbilled.toLocaleString() }}</p>
                     </div>
+                    
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -211,6 +226,13 @@ const isMatterModalOpen = ref(false);
             :show="isMatterModalOpen" 
             :clients="clients"
             @close="isMatterModalOpen = false" 
+        />
+
+        <DashboardTimeEntryModal 
+        :show="isTimeEntryModalOpen" 
+        :matters="matters"
+        :time-entry="selectedTimeEntry"
+        @close="isTimeEntryModalOpen = false" 
         />
 
 
