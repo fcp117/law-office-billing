@@ -196,6 +196,7 @@ const openTimeEntryModal = (entry = null) => {
                                         <div class="font-semibold text-blue-600">{{ matter.name }}</div>
                                         <div class="text-xs text-gray-500 mt-1 flex justify-between">
                                             <span>{{ matter.authority }}</span>
+                                            <span>{{ matter.client.name }}</span>
                                             <span class="text-green-600">{{ matter.status }}</span>
                                         </div>
                                     </Link>

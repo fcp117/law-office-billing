@@ -19,10 +19,10 @@ export default defineConfig({
     ],
 
     server: { 
-        host: '0.0.0.0', // Listen on all network interfaces
-        hmr: {
-            host: '192.168.1.88', // YOUR UBUNTU IP ADDRESS HERE
-        },
+        host: '127.0.0.1',
+        //hmr: {
+        //    host: '192.168.1.88', // YOUR UBUNTU IP ADDRESS HERE
+       // },
         cors: true, // This is the key that fixes the Cross-Origin error
     },
 

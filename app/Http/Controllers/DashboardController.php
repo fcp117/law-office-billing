@@ -7,6 +7,8 @@ use Inertia\Inertia;
 use Carbon\Carbon;
 use App\Models\TimeEntry;
 use App\Models\Client;
+use App\Models\Event;
+use App\Models\Task;
 
 class DashboardController extends Controller
 {
@@ -26,22 +28,42 @@ class DashboardController extends Controller
         $totalUnbilled = (clone $myTimeThisMonth)->whereNull('invoice_id')->sum('amount');
 
         // 2. Fetch Action Items (Eager load the Matter so the UI can display the case name)
-        $events = $user->events()
-            ->with('matter:id,name') // Only grab the ID and Name to save memory
-            ->where('scheduled_at', '>=', now())
-            ->orderBy('scheduled_at', 'asc')
-            //->take(5) // Limit to next 5 upcoming
-            ->get();
+        //$events = $user->events()
+          //  ->with('matter:id,name') // Only grab the ID and Name to save memory
+           // ->where('scheduled_at', '>=', now())
+           // ->orderBy('scheduled_at', 'asc')
+           // ->get();
 
-        $tasks = $user->tasks()
-            ->with('matter:id,name')
-            ->where('status', 'Pending')
-            ->orderBy('deadline', 'asc')
-            //->take(5)
-            ->get();
+        // 1. Get an array of the IDs for the user's matters
+        $matterIds = $user->matters()->pluck('matters.id');
+
+        // 2. Query the Events table directly
+        $events = Event::with('matter:id,name') // <-- Add this line!
+        ->whereHas('matter.users', function ($query) use ($user) {
+            $query->where('users.id', $user->id); 
+        })
+        ->where('scheduled_at', '>=', now())
+        ->orderBy('scheduled_at', 'asc')
+        ->get();
+
+        //$tasks = $user->tasks()
+          //  ->with('matter:id,name')
+          //  ->where('status', 'Pending')
+          //  ->orderBy('deadline', 'asc')
+          //  ->take(5)
+          //  ->get();
+
+        $tasks = Task::with('matter:id,name') // <-- Add this line!
+        ->whereHas('matter.users', function ($query) use ($user) {
+            $query->where('users.id', $user->id); 
+        })
+        ->where('status', 'Pending')
+        ->orderBy('deadline', 'asc')
+        ->get();
 
         // 3. Fetch Active Matters
         $matters = $user->matters()
+            ->with('client:id,name')
             ->where('status', 'Active')
             ->orderBy('created_at', 'desc')
             ->get();

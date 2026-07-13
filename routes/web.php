@@ -80,7 +80,6 @@ Route::post('/matters/{matter}/time-entries', [TimeEntryController::class, 'stor
 Route::put('/time-entries/{time_entry}', [TimeEntryController::class, 'update'])->name('time-entries.update');
 Route::delete('/time-entries/{time_entry}', [TimeEntryController::class, 'destroy'])->name('time-entries.destroy');
 
-
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

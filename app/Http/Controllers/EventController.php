@@ -15,6 +15,8 @@ class EventController extends Controller
             'scheduled_at' => 'required|date',
         ]);
 
+       // $validated['user_id'] = auth()->id();
+
         $matter->events()->create($validated);
 
         return redirect()->back();
