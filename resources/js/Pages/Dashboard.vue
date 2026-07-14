@@ -194,9 +194,9 @@ const openTimeEntryModal = (entry = null) => {
                                 <li v-for="matter in matters" :key="matter.id">
                                     <Link :href="route('matters.show', matter.id)" class="block p-3 rounded hover:bg-gray-50 transition border border-transparent hover:border-gray-200">
                                         <div class="font-semibold text-blue-600">{{ matter.name }}</div>
+                                        <div class="font-semibold text-gray-600">{{ matter.client.name }}</div>
                                         <div class="text-xs text-gray-500 mt-1 flex justify-between">
                                             <span>{{ matter.authority }}</span>
-                                            <span>{{ matter.client.name }}</span>
                                             <span class="text-green-600">{{ matter.status }}</span>
                                         </div>
                                     </Link>
