@@ -98,7 +98,7 @@ const formatCurrency = (amount) => {
                             <td class="font-bold text-slate-700 py-1" style="width: 15%;">FOR:</td>
                             <td class="text-slate-800 py-1" style="width: 35%;">{{ invoice.matter?.client?.name || 'Valued Client' }}</td>
                             <td class="font-bold text-slate-700 py-1" style="width: 15%;">MATTER FILE:</td>
-                            <td class="text-slate-800 py-1" style="width: 35%;">{{ invoice.matter?.name || 'N/A' }}[cite: 2, 3, 7]</td>
+                            <td class="text-slate-800 py-1" style="width: 35%;">{{ invoice.matter?.name || 'N/A' }}</td>
                         </tr>
                         <tr>
                             <td class="font-bold text-slate-700 py-1">ATTENTION:</td>
