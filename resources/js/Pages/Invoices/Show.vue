@@ -46,7 +46,7 @@ const formatCurrency = (amount) => {
         <template #header>
             <div class="flex justify-between items-center print:hidden">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    Statement of Account: {{ invoice.invoice_number }}[cite: 3, 7]
+                    Statement of Account: {{ invoice.invoice_number }}
                 </h2>
                 <div class="space-x-3">
                     <a :href="route('invoices.download', invoice.id)" 
@@ -75,17 +75,17 @@ const formatCurrency = (amount) => {
                             <div class="text-xs text-slate-500 mt-1 leading-relaxed">
                                 Attorneys-at-Law<br>
                                 Metro Manila, Philippines<br>
-                                Email: info@ocbocc.com[cite: 7]
+                                Email: info@ocbocc.com
                             </div>
                         </td>
                         <td class="align-top text-right">
                             <div class="text-xl font-bold uppercase text-slate-900 tracking-wide mb-1">
-                                Statement of Account[cite: 7]
+                                Statement of Account
                             </div>
                             <div class="text-xs text-slate-500 leading-relaxed">
-                                <strong>Invoice No:</strong> {{ invoice.invoice_number }}[cite: 3, 7]<br>
-                                <strong>Date:</strong> {{ formatLongDate(invoice.issue_date) }}[cite: 3, 7]<br>
-                                <strong>Due Date:</strong> {{ formatLongDate(invoice.due_date) }}[cite: 3, 7]
+                                <strong>Invoice No:</strong> {{ invoice.invoice_number }}<br>
+                                <strong>Date:</strong> {{ formatLongDate(invoice.issue_date) }}<br>
+                                <strong>Due Date:</strong> {{ formatLongDate(invoice.due_date) }}
                             </div>
                         </td>
                     </tr>
@@ -102,7 +102,7 @@ const formatCurrency = (amount) => {
                         </tr>
                         <tr>
                             <td class="font-bold text-slate-700 py-1">ATTENTION:</td>
-                            <td class="text-slate-800 py-1">Client Billing Department[cite: 7]</td>
+                            <td class="text-slate-800 py-1">Client Billing Department</td>
                             <td class="font-bold text-slate-700 py-1">AUTHORITY:</td>
                             <td class="text-slate-800 py-1">{{ invoice.matter?.authority || 'N/A' }}</td>
                         </tr>
@@ -112,7 +112,7 @@ const formatCurrency = (amount) => {
                 <!-- Professional Services Section Title -->
                 <div>
                     <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-3">
-                        Professional Services Rendered[cite: 7]
+                        Professional Services Rendered
                     </h4>
                     
                     <!-- Itemized Time Entries Table -->
@@ -121,8 +121,8 @@ const formatCurrency = (amount) => {
                             <thead>
                                 <tr class="bg-slate-900 text-white uppercase tracking-wider">
                                     <th class="py-2.5 px-3" style="width: 12%;">Date</th>
-                                    <th class="py-2.5 px-3" style="width: 15%;">Timekeeper[cite: 7]</th>
-                                    <th class="py-2.5 px-3" style="width: 43%;">Description of Services[cite: 7]</th>
+                                    <th class="py-2.5 px-3" style="width: 15%;">Timekeeper</th>
+                                    <th class="py-2.5 px-3" style="width: 43%;">Description of Services</th>
                                     <th class="py-2.5 px-3 text-center" style="width: 10%;">Hours</th>
                                     <th class="py-2.5 px-3 text-right" style="width: 10%;">Rate</th>
                                     <th class="py-2.5 px-3 text-right" style="width: 10%;">Amount</th>
@@ -130,12 +130,12 @@ const formatCurrency = (amount) => {
                             </thead>
                             <tbody class="divide-y divide-slate-200">
                                 <tr v-for="entry in invoice.time_entries" :key="entry.id" class="hover:bg-slate-50">
-                                    <td class="py-2.5 px-3 text-slate-600">{{ formatShortDate(entry.start_time) }}[cite: 1, 2, 7]</td>
+                                    <td class="py-2.5 px-3 text-slate-600">{{ formatShortDate(entry.start_time) }}</td>
                                     <td class="py-2.5 px-3 font-bold text-slate-800">{{ entry.user?.name || 'Lawyer' }}</td>
-                                    <td class="py-2.5 px-3 text-slate-600">{{ entry.description }}[cite: 1, 2, 7]</td>
-                                    <td class="py-2.5 px-3 text-center text-slate-600">{{ Number(entry.hours).toFixed(2) }}[cite: 1, 2, 7]</td>
-                                    <td class="py-2.5 px-3 text-right text-slate-600">{{ formatCurrency(entry.hourly_rate) }}[cite: 1, 2, 7]</td>
-                                    <td class="py-2.5 px-3 text-right font-bold text-slate-900">{{ formatCurrency(entry.amount) }}[cite: 1, 2, 7]</td>
+                                    <td class="py-2.5 px-3 text-slate-600">{{ entry.description }}</td>
+                                    <td class="py-2.5 px-3 text-center text-slate-600">{{ Number(entry.hours).toFixed(2) }}</td>
+                                    <td class="py-2.5 px-3 text-right text-slate-600">{{ formatCurrency(entry.hourly_rate) }}</td>
+                                    <td class="py-2.5 px-3 text-right font-bold text-slate-900">{{ formatCurrency(entry.amount) }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -148,15 +148,15 @@ const formatCurrency = (amount) => {
                         <table class="w-full border-collapse">
                             <tr>
                                 <td class="p-2.5 text-slate-600 border-b border-slate-200"><strong>Total Professional Fees:</strong></td>
-                                <td class="p-2.5 text-right font-bold text-slate-900 border-b border-slate-200">{{ formatCurrency(invoice.total_amount) }}[cite: 3, 7]</td>
+                                <td class="p-2.5 text-right font-bold text-slate-900 border-b border-slate-200">{{ formatCurrency(invoice.total_amount) }}</td>
                             </tr>
                             <tr>
                                 <td class="p-2.5 text-slate-600 border-b border-slate-200"><strong>Previous Balance:</strong></td>
-                                <td class="p-2.5 text-right text-slate-600 border-b border-slate-200">₱0.00[cite: 7]</td>
+                                <td class="p-2.5 text-right text-slate-600 border-b border-slate-200">₱0.00</td>
                             </tr>
                             <tr class="bg-slate-100">
                                 <td class="p-2.5 font-bold text-slate-900"><strong>Total Balance Due:</strong></td>
-                                <td class="p-2.5 text-right font-bold text-slate-900 text-sm"><strong>{{ formatCurrency(invoice.total_amount) }}</strong>[cite: 3, 7]</td>
+                                <td class="p-2.5 text-right font-bold text-slate-900 text-sm"><strong>{{ formatCurrency(invoice.total_amount) }}</strong></td>
                             </tr>
                         </table>
                     </div>
@@ -165,12 +165,12 @@ const formatCurrency = (amount) => {
                 <!-- Remarks / Payment Instructions -->
                 <div v-if="invoice.remarks" class="text-xs text-slate-700 mt-6 pt-4 border-t border-slate-200">
                     <strong class="text-slate-900">Remarks / Payment Instructions:</strong><br>
-                    <p class="mt-1 text-slate-600">{{ invoice.remarks }}[cite: 3, 7]</p>
+                    <p class="mt-1 text-slate-600">{{ invoice.remarks }}</p>
                 </div>
 
                 <!-- Footer Check Payment Notice -->
                 <div class="text-center text-[10px] text-slate-400 mt-12 pt-4 border-t border-slate-200">
-                    Please make checks payable to <strong>Ortega, Bacorro, Odulio, Calma & Carbonell</strong>. Thank you for your continued confidence and patronage.[cite: 7]
+                    Please make checks payable to <strong>Ortega, Bacorro, Odulio, Calma & Carbonell</strong>. Thank you for your continued confidence and patronage.
                 </div>
 
             </div>

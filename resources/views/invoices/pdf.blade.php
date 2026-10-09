@@ -91,8 +91,8 @@
                     <td class="bold">{{ $entry->user->name ?? 'Lawyer' }}</td>
                     <td>{{ $entry->description }}</td>
                     <td class="text-center">{{ number_format($entry->hours, 2) }}</td>
-                    <td class="text-right">₱{{ number_format($entry->hourly_rate, 2) }}</td>
-                    <td class="text-right bold">₱{{ number_format($entry->amount, 2) }}</td>
+                    <td class="text-right">Php{{ number_format($entry->hourly_rate, 2) }}</td>
+                    <td class="text-right bold">Php{{ number_format($entry->amount, 2) }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -103,15 +103,15 @@
         <table class="totals-table">
             <tr>
                 <td><strong>Total Professional Fees:</strong></td>
-                <td class="text-right bold">₱{{ number_format($invoice->total_amount, 2) }}</td>
+                <td class="text-right bold">Php{{ number_format($invoice->total_amount, 2) }}</td>
             </tr>
             <tr>
                 <td><strong>Previous Balance:</strong></td>
-                <td class="text-right">₱0.00</td>
+                <td class="text-right">Php0.00</td>
             </tr>
             <tr style="background-color: #f1f5f9;">
                 <td><strong>Total Balance Due:</strong></td>
-                <td class="text-right bold" style="font-size: 13px; color: #0f172a;">₱{{ number_format($invoice->total_amount, 2) }}</td>
+                <td class="text-right bold" style="font-size: 13px; color: #0f172a;">Php{{ number_format($invoice->total_amount, 2) }}</td>
             </tr>
         </table>
     </div>

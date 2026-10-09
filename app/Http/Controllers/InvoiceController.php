@@ -69,7 +69,7 @@ class InvoiceController extends Controller
     public function show(Invoice $invoice)
     {
         // Eager load relationships defined in the models
-        $invoice->load(['matter', 'timeEntries', 'creator']);
+        $invoice->load(['matter.client', 'timeEntries.user', 'creator']);
 
         return Inertia::render('Invoices/Show', [
             'invoice' => $invoice
