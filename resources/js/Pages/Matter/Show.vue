@@ -93,6 +93,31 @@ const deleteEvent = (event) => {
         router.delete(route('events.destroy', event.id), { preserveScroll: true });
     }
 };
+
+// Add this near your other logic blocks in <script setup>
+
+// ==========================================
+// 4. GENERATE INVOICE LOGIC
+// ==========================================
+const generateInvoice = () => {
+    if (confirm('Generate an invoice for all unbilled time entries?')) {
+        const today = new Date();
+        const dueDate = new Date();
+        dueDate.setDate(today.getDate() + 30); // Set due date to Net 30
+
+        router.post(route('invoices.store', props.matter.id), {
+            issue_date: today.toISOString().split('T')[0],
+            due_date: dueDate.toISOString().split('T')[0],
+            remarks: 'Thank you for your business.' // Default remark
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                // Optional: You can add a toast notification here
+                console.log('Invoice generated successfully.');
+            }
+        });
+    }
+};
 </script>
 
 <template>
@@ -234,7 +259,7 @@ const deleteEvent = (event) => {
                                     + Log Hours
                                 </button>
                             </div>
-                            <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-blue-700 transition">
+                            <button @click="generateInvoice" class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-blue-700 transition">
                                 Generate Invoice
                             </button>
                         </div>
@@ -279,7 +304,11 @@ const deleteEvent = (event) => {
                             </thead>
                             <tbody>
                                 <tr v-for="invoice in matter.invoices" :key="invoice.id" class="border-b">
-                                    <td class="p-3 font-medium text-slate-800">{{ invoice.invoice_number }}</td>
+                                    <td class="p-3 font-medium">
+                                        <Link :href="route('invoices.show', invoice.id)" class="text-blue-600 hover:text-blue-800 hover:underline">
+                                            {{ invoice.invoice_number }}
+                                        </Link>
+                                    </td>
                                     <td class="p-3 text-slate-600">{{ new Date(invoice.issue_date).toLocaleDateString() }}</td>
                                     <td class="p-3">
                                         <!-- Dynamic Status Badges -->
