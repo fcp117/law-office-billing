@@ -50,6 +50,12 @@ const formatCurrency = (amt) => '₱' + Number(amt || 0).toLocaleString('en-US',
                         </tr>
                     </tbody>
                 </table>
+                <div class="bg-white p-6 rounded-lg flex flex-col items-end">
+                    <h3 class="text-gray-500 text-sm font-semibold">Total Unpaid Amount</h3>
+                    <p class="text-xl font-bold text-gray-900 mt-1">
+                        {{ parseFloat(matter.total_unpaid_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                    </p>
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>

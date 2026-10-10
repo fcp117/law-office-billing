@@ -74,6 +74,9 @@ class MatterController extends Controller
             return $invoice;
         });
 
+        // Calculate the total unpaid amount for this matter
+        $matter->total_unpaid_amount = $matter->invoices->sum('balance_due');
+
         return Inertia::render('Matter/StatementOfAccount', [
             'matter' => $matter
         ]);
