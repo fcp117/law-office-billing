@@ -349,6 +349,19 @@ const generateInvoice = () => {
                         <p v-else class="text-slate-500 italic">No invoices have been generated for this matter yet.</p>
                     </div>
                 </div>
+
+                <!-- Add this card into your summary grid -->
+                <div class="bg-white p-6 rounded-lg shadow border-b-4 border-amber-500">
+                    <h3 class="text-gray-500 text-sm font-semibold">Total Unpaid Amount</h3>
+                    <p class="text-3xl font-bold text-gray-900 mt-1">
+                        Php {{ parseFloat(matter.total_unpaid_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                    </p>
+                    <div class="mt-4">
+                        <Link :href="route('matters.statement', matter.id)" class="text-xs bg-amber-50 text-amber-700 px-3 py-1.5 rounded font-semibold border border-amber-200 hover:bg-amber-100 transition">
+                            View Statement of Account
+                        </Link>
+                    </div>
+                </div>
     </AuthenticatedLayout>
     
     <div v-if="isPaymentModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 bg-opacity-50 backdrop-blur-sm transition-opacity">

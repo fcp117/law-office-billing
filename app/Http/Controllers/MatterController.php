@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Matter;
 use Inertia\Inertia;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class MatterController extends Controller
 {
@@ -25,12 +26,14 @@ class MatterController extends Controller
 
         $matter->invoices->transform(function ($invoice) {
             $invoice->total_payments = $invoice->payments->sum('amount');
-            $invoice->balance_due = $invoice->total_amount - $invoice->total_payments;
+            $invoice->balance_due = max(0, $invoice->total_amount - $invoice->total_payments);
             return $invoice;
         });
 
         //dd($matter);
 
+        // Calculate the total unpaid amount for this matter
+        $matter->total_unpaid_amount = $matter->invoices->sum('balance_due');
 
         return Inertia::render('Matter/Show', [
             'matter' => $matter
@@ -58,5 +61,37 @@ class MatterController extends Controller
 
         // 3. Send the user back so Inertia can refresh the ClientShow page automatically
         return redirect()->back();
+    }
+
+    public function statement($id)
+    {
+        $user = auth()->user();
+        $matter = $user->matters()->with(['client', 'invoices.payments'])->findOrFail($id);
+
+        $matter->invoices->transform(function ($invoice) {
+            $invoice->total_payments = $invoice->payments->sum('amount');
+            $invoice->balance_due = max(0, $invoice->total_amount - $invoice->total_payments);
+            return $invoice;
+        });
+
+        return Inertia::render('Matter/StatementOfAccount', [
+            'matter' => $matter
+        ]);
+    }
+
+    public function downloadStatementPdf($id)
+    {
+        $user = auth()->user();
+        $matter = $user->matters()->with(['client', 'invoices.payments'])->findOrFail($id);
+
+        $matter->invoices->transform(function ($invoice) {
+            $invoice->total_payments = $invoice->payments->sum('amount');
+            $invoice->balance_due = max(0, $invoice->total_amount - $invoice->total_payments);
+            return $invoice;
+        });
+
+        $pdf = Pdf::loadView('matters.statementofaccount-pdf', compact('matter'));
+
+        return $pdf->download('Statement-of-Account-' . $matter->id . '.pdf');
     }
 }

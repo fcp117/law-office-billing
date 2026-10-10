@@ -39,14 +39,14 @@ const formatCurrency = (amount) => {
 </script>
 
 <template>
-    <Head :title="`Statement of Account - ${invoice.invoice_number}`" />
+    <Head :title="`Invoice - ${invoice.invoice_number}`" />
 
     <AuthenticatedLayout>
         <!-- Print-hidden navigation & download header toolbar -->
         <template #header>
             <div class="flex justify-between items-center print:hidden">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    Statement of Account: {{ invoice.invoice_number }}
+                    Invoice: {{ invoice.invoice_number }}
                 </h2>
                 <div class="space-x-3">
                     <a :href="route('invoices.download', invoice.id)" 

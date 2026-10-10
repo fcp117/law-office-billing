@@ -66,4 +66,12 @@ class Matter extends Model
     {
         return $this->hasMany(Invoice::class);
     }
+
+    public function getTotalUnpaidAmountAttribute()
+    {
+        return $this->invoices->sum(function ($invoice) {
+            $totalPaid = $invoice->payments->sum('amount');
+            return max(0, $invoice->total_amount - $totalPaid);
+        });
+    }
 }

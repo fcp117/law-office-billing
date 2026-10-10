@@ -93,4 +93,7 @@ Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('inv
 Route::get('/invoices/{invoice}/download', [InvoiceController::class, 'downloadPdf'])->name('invoices.download');
 Route::get('/invoices/{invoice}/ledes', [InvoiceController::class, 'downloadLedes'])->name('invoices.ledes');
 
+Route::get('/matters/{matter}/statement', [MatterController::class, 'statement'])->name('matters.statement');
+Route::get('/matters/{matter}/statement/download', [MatterController::class, 'downloadStatementPdf'])->name('matters.statement.download');
+
 require __DIR__.'/auth.php';
