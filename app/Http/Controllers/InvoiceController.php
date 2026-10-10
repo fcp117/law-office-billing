@@ -31,7 +31,12 @@ class InvoiceController extends Controller
         }
 
         // 3. Calculate total from the time entries
-        $totalAmount = $unbilledEntries->sum('amount');
+        $subtotalFees = $unbilledEntries->sum('amount');
+
+        // 4. Calculate VAT
+
+        $vatAmount = $subtotalFees * 0.12;
+        $totalAmount = $subtotalFees + $vatAmount;
         
         // Generate a simple invoice number (you can replace this with a sequence generator)
         $invoiceNumber = 'INV-' . date('Ymd') . '-' . rand(1000, 9999);

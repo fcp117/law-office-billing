@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>Statement of Account - {{ $invoice->invoice_number }}</title>
     <style>
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; font-size: 12px; line-height: 1.4; margin: 0; padding: 0; }
+        body { font-family: 'Dejavu Sans', Helvetica, Arial, sans-serif; color: #333; font-size: 12px; line-height: 1.4; margin: 0; padding: 0; }
         .header-table, .details-table, .items-table { width: 100%; border-collapse: collapse; }
         .header-table td { vertical-align: top; }
         .firm-name { font-size: 18px; font-weight: bold; text-transform: uppercase; color: #1e293b; }
@@ -91,8 +91,8 @@
                     <td class="bold">{{ $entry->user->name ?? 'Lawyer' }}</td>
                     <td>{{ $entry->description }}</td>
                     <td class="text-center">{{ number_format($entry->hours, 2) }}</td>
-                    <td class="text-right">Php{{ number_format($entry->hourly_rate, 2) }}</td>
-                    <td class="text-right bold">Php{{ number_format($entry->amount, 2) }}</td>
+                    <td class="text-right">&#8369;{{ number_format($entry->hourly_rate, 2) }}</td>
+                    <td class="text-right bold">&#8369;{{ number_format($entry->amount, 2) }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -103,15 +103,15 @@
         <table class="totals-table">
             <tr>
                 <td><strong>Total Professional Fees:</strong></td>
-                <td class="text-right bold">Php{{ number_format($invoice->total_amount, 2) }}</td>
+                <td class="text-right bold">&#8369;{{ number_format($invoice->total_amount, 2) }}</td>
             </tr>
             <tr>
                 <td><strong>Previous Balance:</strong></td>
-                <td class="text-right">Php0.00</td>
+                <td class="text-right">&#8369;0.00</td>
             </tr>
             <tr style="background-color: #f1f5f9;">
                 <td><strong>Total Balance Due:</strong></td>
-                <td class="text-right bold" style="font-size: 13px; color: #0f172a;">Php{{ number_format($invoice->total_amount, 2) }}</td>
+                <td class="text-right bold" style="font-size: 13px; color: #0f172a;">&#8369;{{ number_format($invoice->total_amount, 2) }}</td>
             </tr>
         </table>
     </div>

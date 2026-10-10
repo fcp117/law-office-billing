@@ -147,7 +147,15 @@ const formatCurrency = (amount) => {
                     <div class="w-72 border border-slate-200 rounded-md overflow-hidden text-xs">
                         <table class="w-full border-collapse">
                             <tr>
-                                <td class="p-2.5 text-slate-600 border-b border-slate-200"><strong>Total Professional Fees:</strong></td>
+                                <td class="p-2.5 text-slate-600 border-b border-slate-200"><strong>Our Fees:</strong></td>
+                                <td class="p-2.5 text-right font-bold text-slate-900 border-b border-slate-200">{{ formatCurrency(invoice.total_amount / 1.12) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 text-slate-600 border-b border-slate-200"><strong>+ 12% VAT:</strong></td>
+                                <td class="p-2.5 text-right font-bold text-slate-900 border-b border-slate-200">{{ formatCurrency((invoice.total_amount / 1.12) * 0.12) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 text-slate-600 border-b border-slate-200"><strong>Total Fees:</strong></td>
                                 <td class="p-2.5 text-right font-bold text-slate-900 border-b border-slate-200">{{ formatCurrency(invoice.total_amount) }}</td>
                             </tr>
                             <tr>
