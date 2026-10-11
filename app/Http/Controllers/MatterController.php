@@ -11,17 +11,23 @@ class MatterController extends Controller
 {
     public function show($id)
     {
-        //Fetch the user
         $user = auth()->user();
     
+        // Determine the base query: Partners see all matters, others only see assigned matters
+        $query = $user->role === 'partner' ? Matter::query() : $user->matters();
+
         // Eager load everything needed for the single case view
-        $matter = $user->matters()->with([
+        $matter = $query->with([
             'client', 
-            'users', // The legal team assigned
+            'users', 
             'events', 
             'tasks', 
-            'timeEntries.user', // Eager load the user inside the time entry to see WHO logged it
-            'invoices.payments', // Eager load payments for each invoice
+            // Order time entries chronologically by start_time
+            'timeEntries' => function ($query) {
+                $query->orderBy('start_time', 'asc'); 
+            },
+            'timeEntries.user', 
+            'invoices.payments', 
         ])->findOrFail($id);
 
         $matter->invoices->transform(function ($invoice) {
@@ -29,8 +35,6 @@ class MatterController extends Controller
             $invoice->balance_due = max(0, $invoice->total_amount - $invoice->total_payments);
             return $invoice;
         });
-
-        //dd($matter);
 
         // Calculate the total unpaid amount for this matter
         $matter->total_unpaid_amount = $matter->invoices->sum('balance_due');

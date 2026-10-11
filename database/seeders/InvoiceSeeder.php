@@ -24,7 +24,9 @@ class InvoiceSeeder extends Seeder
 
             if ($unbilledEntries->count() > 0) {
                 // Calculate the total amount
-                $totalAmount = $unbilledEntries->sum('amount');
+                $subTotal = $unbilledEntries->sum('amount');
+                $vatAmount = $subTotal * 0.12;
+                $totalAmount = $subTotal + $vatAmount;
                 
                 // Simulate generating this invoice sometime last month
                 $issueDate = \Carbon\Carbon::now()->subDays(rand(15, 45));
