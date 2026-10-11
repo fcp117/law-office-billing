@@ -38,12 +38,14 @@
                 <div class="firm-name">Ortega, Bacorro, Odulio, Calma & Carbonell</div>
                 <div class="firm-address">
                     Attorneys-at-Law<br>
-                    Metro Manila, Philippines<br>
-                    Email: info@ocbocc.com
+                    5th and 6th Floors ALPAP 1 Bldg.<br>
+                    140 L.P. Leviste St., Salcedo Village<br>
+                    Makati City<br>
+                    Email: law@ocbocc.com
                 </div>
             </td>
             <td>
-                <div class="invoice-title">Statement of Account</div>
+                <div class="invoice-title">INVOICE</div>
                 <div class="invoice-meta text-right">
                     <strong>Invoice No:</strong> {{ $invoice->invoice_number }}<br>
                     <strong>Date:</strong> {{ $invoice->issue_date->format('F d, Y') }}<br>
@@ -99,18 +101,23 @@
     </table>
 
     <!-- Totals Calculations -->
+
+    @php
+    $ourFees = $invoice->total_amount / 1.12;
+    $vat = $ourFees * 0.12;
+    @endphp
     <div class="totals-section">
         <table class="totals-table">
             <tr>
-                <td><strong>Total Professional Fees:</strong></td>
-                <td class="text-right bold">&#8369;{{ number_format($invoice->total_amount, 2) }}</td>
+                <td><strong>Our Fees:</strong></td>
+                <td class="text-right bold">&#8369;{{ number_format($ourFees, 2) }}</td>
             </tr>
             <tr>
-                <td><strong>Previous Balance:</strong></td>
-                <td class="text-right">&#8369;0.00</td>
+                <td><strong>+ 12% VAT:</strong></td>
+                <td class="text-right">&#8369;{{number_format($vat, 2)}}</td>
             </tr>
             <tr style="background-color: #f1f5f9;">
-                <td><strong>Total Balance Due:</strong></td>
+                <td><strong>Total:</strong></td>
                 <td class="text-right bold" style="font-size: 13px; color: #0f172a;">&#8369;{{ number_format($invoice->total_amount, 2) }}</td>
             </tr>
         </table>

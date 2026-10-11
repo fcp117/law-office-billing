@@ -83,7 +83,7 @@ class InvoiceController extends Controller
 
     public function downloadPdf(Invoice $invoice)
     {
-        $invoice->load(['matter', 'timeEntries', 'creator']);
+        $invoice->load(['matter.client', 'timeEntries', 'creator']);
 
         // Load a specific Blade view for the PDF layout
         $pdf = Pdf::loadView('invoices.pdf', compact('invoice'));

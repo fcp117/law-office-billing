@@ -68,14 +68,20 @@ class MatterController extends Controller
         $user = auth()->user();
         $matter = $user->matters()->with(['client', 'invoices.payments'])->findOrFail($id);
 
-        $matter->invoices->transform(function ($invoice) {
+        // Transform invoices and filter out fully paid ones (balance_due <= 0)
+        $filteredInvoices = $matter->invoices->map(function ($invoice) {
             $invoice->total_payments = $invoice->payments->sum('amount');
             $invoice->balance_due = max(0, $invoice->total_amount - $invoice->total_payments);
             return $invoice;
-        });
+        })->filter(function ($invoice) {
+            return $invoice->balance_due > 0;
+        })->values(); // Resets collection keys for clean JSON array serialization
 
-        // Calculate the total unpaid amount for this matter
-        $matter->total_unpaid_amount = $matter->invoices->sum('balance_due');
+        // Update the relation on the matter model
+        $matter->setRelation('invoices', $filteredInvoices);
+
+        // Calculate the total unpaid amount for this matter based only on remaining active invoices
+        $matter->total_unpaid_amount = $filteredInvoices->sum('balance_due');
 
         return Inertia::render('Matter/StatementOfAccount', [
             'matter' => $matter
@@ -87,11 +93,20 @@ class MatterController extends Controller
         $user = auth()->user();
         $matter = $user->matters()->with(['client', 'invoices.payments'])->findOrFail($id);
 
-        $matter->invoices->transform(function ($invoice) {
+         // Transform invoices and filter out fully paid ones (balance_due <= 0)
+        $filteredInvoices = $matter->invoices->map(function ($invoice) {
             $invoice->total_payments = $invoice->payments->sum('amount');
             $invoice->balance_due = max(0, $invoice->total_amount - $invoice->total_payments);
             return $invoice;
-        });
+        })->filter(function ($invoice) {
+            return $invoice->balance_due > 0;
+        })->values(); // Resets collection keys for clean JSON array serialization
+
+        // Update the relation on the matter model
+        $matter->setRelation('invoices', $filteredInvoices);
+
+        // Calculate the total unpaid amount for this matter based only on remaining active invoices
+        $matter->total_unpaid_amount = $filteredInvoices->sum('balance_due');
 
         $pdf = Pdf::loadView('matters.statementofaccount-pdf', compact('matter'));
 

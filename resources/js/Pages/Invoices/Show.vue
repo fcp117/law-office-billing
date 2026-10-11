@@ -74,13 +74,15 @@ const formatCurrency = (amount) => {
                             </div>
                             <div class="text-xs text-slate-500 mt-1 leading-relaxed">
                                 Attorneys-at-Law<br>
-                                Metro Manila, Philippines<br>
-                                Email: info@ocbocc.com
+                                5th and 6th Floors ALPAP 1 Bldg.<br>
+                                140 L.P. Leviste St., Salcedo Village<br>
+                                Makati City<br>
+                                Email: law@ocbocc.com
                             </div>
                         </td>
                         <td class="align-top text-right">
                             <div class="text-xl font-bold uppercase text-slate-900 tracking-wide mb-1">
-                                Statement of Account
+                                INVOICE
                             </div>
                             <div class="text-xs text-slate-500 leading-relaxed">
                                 <strong>Invoice No:</strong> {{ invoice.invoice_number }}<br>
@@ -154,16 +156,8 @@ const formatCurrency = (amount) => {
                                 <td class="p-2.5 text-slate-600 border-b border-slate-200"><strong>+ 12% VAT:</strong></td>
                                 <td class="p-2.5 text-right font-bold text-slate-900 border-b border-slate-200">{{ formatCurrency((invoice.total_amount / 1.12) * 0.12) }}</td>
                             </tr>
-                            <tr>
-                                <td class="p-2.5 text-slate-600 border-b border-slate-200"><strong>Total Fees:</strong></td>
-                                <td class="p-2.5 text-right font-bold text-slate-900 border-b border-slate-200">{{ formatCurrency(invoice.total_amount) }}</td>
-                            </tr>
-                            <tr>
-                                <td class="p-2.5 text-slate-600 border-b border-slate-200"><strong>Previous Balance:</strong></td>
-                                <td class="p-2.5 text-right text-slate-600 border-b border-slate-200">₱0.00</td>
-                            </tr>
                             <tr class="bg-slate-100">
-                                <td class="p-2.5 font-bold text-slate-900"><strong>Total Balance Due:</strong></td>
+                                <td class="p-2.5 font-bold text-slate-900"><strong>Total:</strong></td>
                                 <td class="p-2.5 text-right font-bold text-slate-900 text-sm"><strong>{{ formatCurrency(invoice.total_amount) }}</strong></td>
                             </tr>
                         </table>
