@@ -14,7 +14,7 @@ class MatterController extends Controller
         $user = auth()->user();
     
         // Determine the base query: Partners see all matters, others only see assigned matters
-        $query = $user->role === 'partner' ? Matter::query() : $user->matters();
+        $query = $user->role === 'Partner' ? Matter::query() : $user->matters();
 
         // Eager load everything needed for the single case view
         $matter = $query->with([

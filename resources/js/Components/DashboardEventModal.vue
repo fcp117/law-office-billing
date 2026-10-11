@@ -15,6 +15,8 @@ const form = useForm({
     title: '',
     description: '',
     scheduled_at: '',
+    billing_type: 'hourly',
+    fixed_fee_amount: '',
 });
 
 const formatDateTime = (dateString) => {
@@ -29,6 +31,8 @@ watch(() => props.event, (newEvent) => {
         form.title = newEvent.title || '';
         form.description = newEvent.description || '';
         form.scheduled_at = formatDateTime(newEvent.scheduled_at);
+        form.billing_type = newEvent.billing_type || 'hourly';
+        form.fixed_fee_amount = newEvent.fixed_fee_amount || '';
     } else {
         form.reset();
     }
@@ -97,6 +101,22 @@ const closeModal = () => {
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Date & Time *</label>
                         <input type="datetime-local" v-model="form.scheduled_at" class="w-full rounded-md border-slate-300 shadow-sm" required>
                         <div v-if="form.errors.scheduled_at" class="text-red-500 text-xs mt-1">{{ form.errors.scheduled_at }}</div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Billing Type *</label>
+                            <select v-model="form.billing_type" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                                <option value="hourly">Hourly</option>
+                                <option value="fixed_rate">Fixed Rate</option>
+                                <option value="administrative">Administrative (Internal)</option>
+                            </select>
+                            <div v-if="form.errors.billing_type" class="text-red-500 text-xs mt-1">{{ form.errors.billing_type }}</div>
+                        </div>
+                        <div v-if="form.billing_type === 'fixed_rate'">
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Fixed Fee Amount *</label>
+                            <input type="number" step="0.01" v-model="form.fixed_fee_amount" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                            <div v-if="form.errors.fixed_fee_amount" class="text-red-500 text-xs mt-1">{{ form.errors.fixed_fee_amount }}</div>
+                        </div>
                     </div>
                 </div>
 

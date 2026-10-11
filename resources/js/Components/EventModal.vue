@@ -14,6 +14,8 @@ const form = useForm({
     title: '',
     description: '',
     scheduled_at: '',
+    billing_type: 'hourly',
+    fixed_fee_amount: '',
 });
 
 // Format datetime-local string (YYYY-MM-DDTHH:MM)
@@ -27,6 +29,9 @@ watch(() => props.event, (newEvent) => {
     if (newEvent) {
         form.title = newEvent.title || '';
         form.scheduled_at = formatDateTime(newEvent.scheduled_at);
+        form.description = newEvent.description || '';
+        form.billing_type = newEvent.billing_type || 'hourly';
+        form.fixed_fee_amount = newEvent.fixed_fee_amount || '';
     } else {
         form.reset();
     }
@@ -69,7 +74,6 @@ const closeModal = () => {
                 </button>
             </div>
 
-            <!-- The Form now wraps everything, including the buttons -->
             <form @submit.prevent="submit">
                 <div class="p-6 space-y-4">
                     <div>
@@ -78,15 +82,36 @@ const closeModal = () => {
                         <div v-if="form.errors.title" class="text-red-500 text-xs mt-1">{{ form.errors.title }}</div>
                     </div>
                     <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Description / Location</label>
+                        <textarea v-model="form.description" rows="3" class="w-full rounded-md border-slate-300 shadow-sm"></textarea>
+                        <div v-if="form.errors.description" class="text-red-500 text-xs mt-1">{{ form.errors.description }}</div>
+                    </div>
+                    <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Date & Time *</label>
                         <input type="datetime-local" v-model="form.scheduled_at" class="w-full rounded-md border-slate-300 shadow-sm" required>
                         <div v-if="form.errors.scheduled_at" class="text-red-500 text-xs mt-1">{{ form.errors.scheduled_at }}</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Billing Type *</label>
+                            <select v-model="form.billing_type" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                                <option value="hourly">Hourly</option>
+                                <option value="fixed_rate">Fixed Rate</option>
+                                <option value="administrative">Administrative (Internal)</option>
+                            </select>
+                            <div v-if="form.errors.billing_type" class="text-red-500 text-xs mt-1">{{ form.errors.billing_type }}</div>
+                        </div>
+                        <div v-if="form.billing_type === 'fixed_rate'">
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Fixed Fee Amount *</label>
+                            <input type="number" step="0.01" v-model="form.fixed_fee_amount" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                            <div v-if="form.errors.fixed_fee_amount" class="text-red-500 text-xs mt-1">{{ form.errors.fixed_fee_amount }}</div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="bg-slate-50 px-6 py-4 border-t flex justify-end space-x-3 mt-auto">
                     <button type="button" @click="closeModal" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200">Cancel</button>
-                    <!-- Button is now safely inside the form -->
                     <button type="submit" :disabled="form.processing" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
                         {{ event ? 'Save Changes' : 'Add Event' }}
                     </button>

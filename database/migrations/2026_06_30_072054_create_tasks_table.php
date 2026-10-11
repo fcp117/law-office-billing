@@ -18,6 +18,9 @@ return new class extends Migration
             $table->string('title');
             $table->dateTime('deadline')->nullable();
             $table->string('status')->default('Pending');
+
+            $table->string('billing_type')->default('hourly');
+            $table->decimal('fixed_fee_amount', 12, 2)->nullable();
             
             $table->timestamps();
         });

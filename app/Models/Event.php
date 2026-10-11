@@ -10,6 +10,8 @@ class Event extends Model
         'matter_id',
         'title',
         'scheduled_at',
+        'billing_type',
+        'fixed_fee_amount',
     ];
 
     protected $casts = [
