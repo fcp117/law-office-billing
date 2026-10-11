@@ -56,6 +56,14 @@ const openTimeEntryModal = (entry = null) => {
     selectedTimeEntry.value = entry;
     isTimeEntryModalOpen.value = true;
 };
+
+// PHP-style currency formatting with the Philippine Peso symbol
+const formatCurrency = (amount) => {
+    return '₱' + Number(amount || 0).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+};
 </script>
 
 <template>
@@ -105,11 +113,11 @@ const openTimeEntryModal = (entry = null) => {
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow border-b-4 border-green-500">
                         <h3 class="text-gray-500 text-sm font-semibold">Billed Amount</h3>
-                        <p class="text-3xl font-bold text-gray-900">Php {{ kpis.billed.toLocaleString() }}</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ formatCurrency(kpis.billed) }}</p>
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow border-b-4 border-blue-500">
                         <h3 class="text-gray-500 text-sm font-semibold">Unbilled Amount</h3>
-                        <p class="text-3xl font-bold text-gray-900">Php {{ kpis.unbilled.toLocaleString() }}</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ formatCurrency(kpis.unbilled) }}</p>
                     </div>
                     
                 </div>
