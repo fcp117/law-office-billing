@@ -12,16 +12,22 @@ const emit = defineEmits(['close']);
 
 const form = useForm({
     title: '',
+    description: '',
     deadline: '',
     status: 'Pending',
+    billing_type: 'hourly',
+    fixed_fee_amount: '',
 });
 
 // Watch for the modal opening to populate the form if we are editing
 watch(() => props.task, (newTask) => {
     if (newTask) {
         form.title = newTask.title || '';
+        form.description = newTask.description || '';
         form.deadline = newTask.deadline ? newTask.deadline.split('T')[0] : '';
         form.status = newTask.status || 'Pending';
+        form.billing_type = newTask.billing_type || 'hourly';
+        form.fixed_fee_amount = newTask.fixed_fee_amount || '';
     } else {
         form.reset();
     }
@@ -73,7 +79,12 @@ const closeModal = () => {
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Task Title *</label>
                         <input type="text" v-model="form.title" class="w-full rounded-md border-slate-300 shadow-sm" required>
                         <div v-if="form.errors.title" class="text-red-500 text-xs mt-1">{{ form.errors.title }}</div>
-                    </div>              
+                    </div> 
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Description</label>
+                        <textarea v-model="form.description" rows="3" class="w-full rounded-md border-slate-300 shadow-sm"></textarea>
+                        <div v-if="form.errors.description" class="text-red-500 text-xs mt-1">{{ form.errors.description }}</div>
+                    </div>      
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1">Deadline *</label>
@@ -87,6 +98,23 @@ const closeModal = () => {
                                 <option value="Completed">Completed</option>
                             </select>
                             <div v-if="form.errors.status" class="text-red-500 text-xs mt-1">{{ form.errors.status }}</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Billing Type *</label>
+                            <select v-model="form.billing_type" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                                <option value="hourly">Hourly</option>
+                                <option value="fixed_rate">Fixed Rate</option>
+                                <option value="administrative">Administrative (Internal)</option>
+                            </select>
+                            <div v-if="form.errors.billing_type" class="text-red-500 text-xs mt-1">{{ form.errors.billing_type }}</div>
+                        </div>
+                        <div v-if="form.billing_type === 'fixed_rate'">
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Fixed Fee Amount *</label>
+                            <input type="number" step="0.01" v-model="form.fixed_fee_amount" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                            <div v-if="form.errors.fixed_fee_amount" class="text-red-500 text-xs mt-1">{{ form.errors.fixed_fee_amount }}</div>
                         </div>
                     </div>
                 </div>
