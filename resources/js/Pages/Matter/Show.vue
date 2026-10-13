@@ -228,6 +228,7 @@ const generateInvoice = () => {
                                     <th class="p-3">Scheduled For</th>
                                     <th class="p-3">Location</th>
                                     <th class="p-3">Actions</th>
+                                    <th class="p-3">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -240,6 +241,12 @@ const generateInvoice = () => {
                                             <button @click="openEventModal(event)" class="text-green-500 text-sm hover:bg-green-600 font-medium py-1 px-3 rounded">Edit</button>
                                             <button @click="deleteEvent(event)" class="text-red-500 text-sm hover:bg-red-600 font-medium py-1 px-3 rounded">Delete</button>
                                         </div>
+                                    </td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-1 text-xs rounded-full" 
+                                            :class="event.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'">
+                                            {{ event.status }}
+                                        </span>
                                     </td>
                                 </tr>
                             </tbody>

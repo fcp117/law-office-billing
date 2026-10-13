@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('matter_id')->constrained()->cascadeOnDelete();
             
             $table->string('title');
+            $table->text('description')->nullable(); // <-- Add this line
             $table->dateTime('scheduled_at');
             $table->string('location')->nullable();
             $table->string('status')->default('Scheduled');

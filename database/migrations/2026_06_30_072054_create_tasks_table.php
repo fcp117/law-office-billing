@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('matter_id')->constrained()->cascadeOnDelete();
             
             $table->string('title');
+            $table->text('description')->nullable(); // <-- Add this line
             $table->dateTime('deadline')->nullable();
             $table->string('status')->default('Pending');
 

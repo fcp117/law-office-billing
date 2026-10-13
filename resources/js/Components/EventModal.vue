@@ -16,6 +16,7 @@ const form = useForm({
     scheduled_at: '',
     billing_type: 'hourly',
     fixed_fee_amount: '',
+    status: 'Scheduled',
 });
 
 // Format datetime-local string (YYYY-MM-DDTHH:MM)
@@ -32,6 +33,7 @@ watch(() => props.event, (newEvent) => {
         form.description = newEvent.description || '';
         form.billing_type = newEvent.billing_type || 'hourly';
         form.fixed_fee_amount = newEvent.fixed_fee_amount || '';
+        form.status = newEvent.status || 'Scheduled';
     } else {
         form.reset();
     }
@@ -90,6 +92,14 @@ const closeModal = () => {
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Date & Time *</label>
                         <input type="datetime-local" v-model="form.scheduled_at" class="w-full rounded-md border-slate-300 shadow-sm" required>
                         <div v-if="form.errors.scheduled_at" class="text-red-500 text-xs mt-1">{{ form.errors.scheduled_at }}</div>
+                    </div>
+                    <div v-if="event">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Status</label>
+                        <select v-model="form.status" class="w-full rounded-md border-slate-300 shadow-sm">
+                            <option value="Scheduled">Scheduled</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                        <div v-if="form.errors.status" class="text-red-500 text-xs mt-1">{{ form.errors.status }}</div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4">

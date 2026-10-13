@@ -16,48 +16,75 @@ class InvoiceController extends Controller
      */
     public function store(Request $request, Matter $matter)
     {
-        // 1. Validate incoming invoice details
         $request->validate([
             'issue_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:issue_date',
             'remarks' => 'nullable|string',
         ]);
 
-        // 2. Retrieve unbilled time entries (where invoice_id is null)
-        $unbilledEntries = $matter->timeEntries()->whereNull('invoice_id')->get();
+        $unbilledEntries = $matter->timeEntries()->with('billable')->whereNull('invoice_id')->get();
 
         if ($unbilledEntries->isEmpty()) {
-            return redirect()->back()->with('error', 'No billable time entries found for this matter.');
+            return redirect()->back()->with('error', 'No unbilled time entries found for this matter.');
         }
 
-        // 3. Calculate total from the time entries
-        $subtotalFees = $unbilledEntries->sum('amount');
+        $hourlyTotal = 0;
+        $fixedRateItems = collect();
+        $entriesToInvoice = collect(); // Tracks only the time entries that are eligible to be billed right now
 
-        // 4. Calculate VAT
+        foreach ($unbilledEntries as $entry) {
+            $billable = $entry->billable;
+
+            if ($billable && $billable->billing_type === 'fixed_rate') {
+                // Only process fixed-rate time entries if the parent Task or Event is completed
+                if (strtolower($billable->status) === 'completed') {
+                    $key = class_basename($billable) . '-' . $billable->id;
+                    
+                    if (!$fixedRateItems->has($key)) {
+                        $fixedRateItems->put($key, $billable->fixed_fee_amount);
+                    }
+                    
+                    $entriesToInvoice->push($entry);
+                }
+                // If not completed, it is intentionally skipped and left in the unbilled queue
+            } elseif ($billable && $billable->billing_type === 'administrative') {
+                // Attach administrative time to the invoice to clear it from the queue, 
+                // but it contributes $0.00 to the totals.
+                $entriesToInvoice->push($entry);
+            } else {
+                // Standard hourly billing
+                $hourlyTotal += $entry->amount;
+                $entriesToInvoice->push($entry);
+            }
+        }
+
+        if ($entriesToInvoice->isEmpty()) {
+            return redirect()->back()->with('error', 'No time entries are ready for invoicing. Fixed-rate tasks must be marked as Completed.');
+        }
+
+        $fixedRateTotal = $fixedRateItems->sum();
+        $subtotalFees = $hourlyTotal + $fixedRateTotal;
 
         $vatAmount = $subtotalFees * 0.12;
         $totalAmount = $subtotalFees + $vatAmount;
         
-        // Generate a simple invoice number (you can replace this with a sequence generator)
         $invoiceNumber = 'INV-' . date('Ymd') . '-' . rand(1000, 9999);
 
-        // 4. Use a database transaction to ensure data integrity
-        DB::transaction(function () use ($request, $matter, $unbilledEntries, $totalAmount, $invoiceNumber) {
+        DB::transaction(function () use ($request, $matter, $entriesToInvoice, $totalAmount, $invoiceNumber) {
             
-            // Create the Invoice record
             $invoice = Invoice::create([
                 'matter_id' => $matter->id,
                 'invoice_number' => $invoiceNumber,
                 'issue_date' => Carbon::parse($request->issue_date),
                 'due_date' => Carbon::parse($request->due_date),
                 'total_amount' => $totalAmount,
-                'status' => 'draft', // Default status
+                'status' => 'draft',
                 'remarks' => $request->remarks,
                 'created_by' => $request->user()->id,
             ]);
 
-            // Associate the unbilled Time Entries with the newly created Invoice
-            foreach ($unbilledEntries as $entry) {
+            // Update only the eligible entries, leaving incomplete fixed-rate entries null
+            foreach ($entriesToInvoice as $entry) {
                 $entry->update([
                     'invoice_id' => $invoice->id,
                     'modified_by' => $request->user()->id,
@@ -73,7 +100,6 @@ class InvoiceController extends Controller
      */
     public function show(Invoice $invoice)
     {
-        // Eager load relationships defined in the models
         $invoice->load(['matter.client', 'timeEntries.user', 'creator']);
 
         return Inertia::render('Invoices/Show', [
@@ -85,7 +111,6 @@ class InvoiceController extends Controller
     {
         $invoice->load(['matter.client', 'timeEntries', 'creator']);
 
-        // Load a specific Blade view for the PDF layout
         $pdf = Pdf::loadView('invoices.pdf', compact('invoice'));
 
         return $pdf->download('Invoice-' . $invoice->invoice_number . '.pdf');
