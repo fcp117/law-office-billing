@@ -5,16 +5,29 @@ import { watch } from 'vue';
 const props = defineProps({
     show: Boolean,
     matterId: [Number, String], // Directly passed from Show.vue
-    timeEntry: Object, 
+    timeEntry: Object,
+    tasks: { type: Array, default: () => [] },   // Ensure these are passed from Show.vue
+    events: { type: Array, default: () => [] },  // Ensure these are passed from Show.vue
 });
 
 const emit = defineEmits(['close']);
+
+// Combine Tasks and Events into one list for the dropdown
+const billableOptions = computed(() => {
+    const options = [];
+    props.tasks.forEach(task => options.push({ id: task.id, type: 'App\\Models\\Task', label: `[Task] ${task.title}` }));
+    props.events.forEach(event => options.push({ id: event.id, type: 'App\\Models\\Event', label: `[Event] ${event.title}` }));
+    return options;
+});
 
 const form = useForm({
     start_time: '',
     end_time: '',
     hours: '',
     description: '',
+    billable_selection: '', // A temporary field to hold the combined ID and Type
+    billable_id: null,
+    billable_type: null,
 });
 
 // Helper to format dates for datetime-local inputs
@@ -31,6 +44,9 @@ watch(() => props.timeEntry, (newEntry) => {
         form.end_time = formatDateTime(newEntry.end_time);
         form.hours = newEntry.hours || '';
         form.description = newEntry.description || '';
+        if (newEntry.billable_id && newEntry.billable_type) {
+            form.billable_selection = `${newEntry.billable_type}|${newEntry.billable_id}`;
+        }
     } else {
         form.reset();
     }
@@ -52,13 +68,22 @@ watch([() => form.start_time, () => form.end_time], ([start, end]) => {
 });
 
 const submit = () => {
+    // Split the selection back into the database columns
+    if (form.billable_selection) {
+        const [type, id] = form.billable_selection.split('|');
+        form.billable_type = type;
+        form.billable_id = id;
+    } else {
+        form.billable_type = null;
+        form.billable_id = null;
+    }
+
     if (props.timeEntry && props.timeEntry.id) {
         form.put(route('time-entries.update', props.timeEntry.id), {
             preserveScroll: true,
             onSuccess: () => emit('close'),
         });
     } else {
-        // Automatically attaches to the current Matter using props.matterId
         form.post(route('matters.time-entries.store', props.matterId), { 
             preserveScroll: true,
             onSuccess: () => {
@@ -90,35 +115,44 @@ const closeModal = () => {
 
             <form @submit.prevent="submit">
                 <div class="p-6 space-y-4">
+                    
+                    <!-- NEW SELECTION DROPDOWN -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Link to Task or Event (Optional)</label>
+                        <select v-model="form.billable_selection" class="w-full rounded-md border-slate-300 shadow-sm bg-white">
+                            <option value="">General Matter Time (Hourly)</option>
+                            <option v-for="option in billableOptions" :key="option.type + option.id" :value="`${option.type}|${option.id}`">
+                                {{ option.label }}
+                            </option>
+                        </select>
+                        <p class="text-xs text-slate-400 mt-1">Leave blank to bill this time at the standard hourly rate.</p>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1">Start Time *</label>
                             <input type="datetime-local" v-model="form.start_time" class="w-full rounded-md border-slate-300 shadow-sm" required>
-                            <div v-if="form.errors.start_time" class="text-red-500 text-xs mt-1">{{ form.errors.start_time }}</div>
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1">End Time *</label>
                             <input type="datetime-local" v-model="form.end_time" class="w-full rounded-md border-slate-300 shadow-sm" required>
-                            <div v-if="form.errors.end_time" class="text-red-500 text-xs mt-1">{{ form.errors.end_time }}</div>
                         </div>
                     </div>
                     
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Total Hours</label>
                         <input type="number" step="0.01" v-model="form.hours" class="w-full rounded-md border-slate-300 shadow-sm bg-slate-50 text-slate-500 font-bold" readonly>
-                        <p class="text-xs text-slate-400 mt-1">Calculated automatically.</p>
                     </div>
 
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Work Description *</label>
-                        <textarea v-model="form.description" rows="3" placeholder="Briefly describe the work done..." class="w-full rounded-md border-slate-300 shadow-sm" required></textarea>
-                        <div v-if="form.errors.description" class="text-red-500 text-xs mt-1">{{ form.errors.description }}</div>
+                        <textarea v-model="form.description" rows="3" class="w-full rounded-md border-slate-300 shadow-sm" required></textarea>
                     </div>
                 </div>
 
                 <div class="bg-slate-50 px-6 py-4 border-t flex justify-end space-x-3 mt-auto">
                     <button type="button" @click="closeModal" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200">Cancel</button>
-                    <button type="submit" :disabled="form.processing" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+                    <button type="submit" :disabled="form.processing" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                         {{ timeEntry ? 'Save Changes' : 'Log Time' }}
                     </button>
                 </div>

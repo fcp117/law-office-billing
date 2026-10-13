@@ -15,6 +15,8 @@ class TimeEntryController extends Controller
             'start_time' => 'required|date',
             'end_time' => 'required|date|after:start_time',
             'description' => 'required|string',
+            'billable_id' => 'nullable|integer',
+            'billable_type' => 'nullable|string|in:App\Models\Task,App\Models\Event',
         ]);
 
         // 1. Calculate precise hours on the backend for security
@@ -32,14 +34,11 @@ class TimeEntryController extends Controller
             'description' => $request->description,
             'start_time' => $start,
             'end_time' => $end,
-            'hours' => round($hours, 2),
+            'hours' => $hours,
             'hourly_rate' => $hourlyRate,
-            'amount' => round($amount, 2),
-            'created_by' => $request->user()->id,
-            
-            // Fulfilling the polymorphic requirement by associating it with the Matter itself
-            'billable_id' => $matter->id,
-            'billable_type' => Matter::class,
+            'amount' => $amount,
+            'billable_id' => $request->billable_id,
+            'billable_type' => $request->billable_type,
         ]);
 
         return redirect()->back();
@@ -51,6 +50,8 @@ class TimeEntryController extends Controller
             'start_time' => 'required|date',
             'end_time' => 'required|date|after:start_time',
             'description' => 'required|string',
+            'billable_id' => 'nullable|integer',
+            'billable_type' => 'nullable|string|in:App\Models\Task,App\Models\Event',
         ]);
 
         $start = Carbon::parse($request->start_time);
@@ -66,6 +67,8 @@ class TimeEntryController extends Controller
             'end_time' => $end,
             'hours' => round($hours, 2),
             'amount' => round($amount, 2),
+            'billable_id' => $request->billable_id,
+            'billable_type' => $request->billable_type,
             'modified_by' => $request->user()->id,
         ]);
 
