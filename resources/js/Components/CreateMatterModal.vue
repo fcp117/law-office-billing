@@ -15,25 +15,13 @@ const form = useForm({
     authority: '',
     status: 'Active', // Default status
     billable_type: 'Hourly',
-    flat_rate_amount: '',
+    fixed_fee_amount: '',
 });
 
 // Update the form's client_id if the prop changes
 watch(() => props.clientId, (newId) => {
     form.client_id = newId;
 });
-
-// Watch for the modal opening to populate the form if we are editing
-watch(() => props.task, (newTask) => {
-    if (newMatter) {
-        form.title = newTask.title || '';
-        form.description = newTask.description || '';
-        form.deadline = newTask.deadline ? newTask.deadline.split('T')[0] : '';
-        form.status = newTask.status || 'Pending';
-    } else {
-        form.reset();
-    }
-}, { immediate: true });
 
 const submit = () => {
     form.post(route('matters.store'), {
@@ -83,12 +71,16 @@ const closeModal = () => {
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Billable Type</label>
                         <select v-model="form.billable_type" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
                             <option value="Hourly">Hourly</option>
-                            <option value="Flat Rate">Flat Rate</option>
+                            <option value="Fixed_Fee">Fixed Fee</option>
                             <option value="Contingency">Contingency</option>
                             <option value="Non-Billable">Non-Billable</option>
                         </select>
                     </div>
-
+                    <div v-if="form.billable_type === 'Fixed_Fee'">
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Fixed Fee Amount *</label>
+                            <input type="number" step="0.01" v-model="form.fixed_fee_amount" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                            <div v-if="form.errors.fixed_fee_amount" class="text-red-500 text-xs mt-1">{{ form.errors.fixed_fee_amount }}</div>
+                    </div>
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Initial Status</label>
                         <select v-model="form.status" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
@@ -97,7 +89,6 @@ const closeModal = () => {
                             <option value="On Hold">On Hold</option>
                         </select>
                     </div>
-
                 </form>
             </div>
 
