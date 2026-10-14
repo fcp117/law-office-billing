@@ -5,7 +5,7 @@ import { watch } from 'vue';
 const props = defineProps({
     show: Boolean,
     matterId: [Number, String],
-    task: Object, // If passed, we are Editing. If null, we are Creating.
+    task: Object,
 });
 
 const emit = defineEmits(['close']);
@@ -17,15 +17,25 @@ const form = useForm({
     status: 'Pending',
 });
 
+// Restored missing watcher
+watch(() => props.task, (newTask) => {
+    if (newTask) {
+        form.title = newTask.title || '';
+        form.description = newTask.description || '';
+        form.deadline = newTask.deadline ? newTask.deadline.split('T')[0] : '';
+        form.status = newTask.status || 'Pending';
+    } else {
+        form.reset();
+    }
+}, { immediate: true });
+
 const submit = () => {
     if (props.task) {
-        // Edit Mode
         form.put(route('tasks.update', props.task.id), {
             preserveScroll: true,
             onSuccess: () => emit('close'),
         });
     } else {
-        // Create Mode
         form.post(route('matters.tasks.store', props.matterId), {
             preserveScroll: true,
             onSuccess: () => {
@@ -56,9 +66,13 @@ const closeModal = () => {
                 </button>
             </div>
 
-            <!-- The Form now wraps everything, including the buttons -->
             <form @submit.prevent="submit">
                 <div class="p-6 space-y-4">
+                    <!-- Display general/unmapped validation errors -->
+                    <div v-if="Object.keys(form.errors).length > 0" class="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-xs">
+                        Please check the highlighted fields and try again.
+                    </div>
+
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Task Title *</label>
                         <input type="text" v-model="form.title" class="w-full rounded-md border-slate-300 shadow-sm" required>
@@ -75,7 +89,7 @@ const closeModal = () => {
                             <input type="date" v-model="form.deadline" class="w-full rounded-md border-slate-300 shadow-sm" required>
                             <div v-if="form.errors.deadline" class="text-red-500 text-xs mt-1">{{ form.errors.deadline }}</div>
                         </div>
-                        <div v-if="task">
+                        <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1">Status</label>
                             <select v-model="form.status" class="w-full rounded-md border-slate-300 shadow-sm">
                                 <option value="Pending">Pending</option>
@@ -88,9 +102,9 @@ const closeModal = () => {
 
                 <div class="bg-slate-50 px-6 py-4 border-t flex justify-end space-x-3 mt-auto">
                     <button type="button" @click="closeModal" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200">Cancel</button>
-                    <!-- Button is now safely inside the form -->
                     <button type="submit" :disabled="form.processing" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
-                        {{ task ? 'Save Changes' : 'Add Task' }}
+                        <span v-if="form.processing">Saving...</span>
+                        <span v-else>{{ task ? 'Save Changes' : 'Add Task' }}</span>
                     </button>
                 </div>
             </form>

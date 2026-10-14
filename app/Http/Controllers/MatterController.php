@@ -52,7 +52,8 @@ class MatterController extends Controller
             'name' => 'required|string|max:255',
             'authority' => 'nullable|string|max:255',
             'status' => 'required|string|in:Active,Pending,On Hold',
-            'billable_type' => 'required|string|in:Hourly,Flat Rate,Contingency,Non-Billable',
+            'billing_type' => 'required|string|in:hourly,fixed_rate,administrative',
+            'fixed_fee_amount' => 'nullable|numeric|min:0',
         ]);
 
         // 2. Create the new Matter in the database

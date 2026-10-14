@@ -12,3 +12,4 @@
 	Tasks model
 	Events model
 3. Modify InvoiceController to distinguish between Fixed and Time Billing
+4. Fix DashboardTimeEntryModal by making link to Task or Event work

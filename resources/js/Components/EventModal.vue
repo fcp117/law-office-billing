@@ -17,7 +17,6 @@ const form = useForm({
     status: 'Scheduled',
 });
 
-// Format datetime-local string (YYYY-MM-DDTHH:MM)
 const formatDateTime = (dateString) => {
     if (!dateString) return '';
     const d = new Date(dateString);
@@ -74,6 +73,10 @@ const closeModal = () => {
 
             <form @submit.prevent="submit">
                 <div class="p-6 space-y-4">
+                    <div v-if="Object.keys(form.errors).length > 0" class="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-xs">
+                        Please check the highlighted fields and try again.
+                    </div>
+
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Event Title *</label>
                         <input type="text" v-model="form.title" class="w-full rounded-md border-slate-300 shadow-sm" required>
@@ -89,7 +92,7 @@ const closeModal = () => {
                         <input type="datetime-local" v-model="form.scheduled_at" class="w-full rounded-md border-slate-300 shadow-sm" required>
                         <div v-if="form.errors.scheduled_at" class="text-red-500 text-xs mt-1">{{ form.errors.scheduled_at }}</div>
                     </div>
-                    <div v-if="event">
+                    <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Status</label>
                         <select v-model="form.status" class="w-full rounded-md border-slate-300 shadow-sm">
                             <option value="Scheduled">Scheduled</option>
@@ -102,7 +105,8 @@ const closeModal = () => {
                 <div class="bg-slate-50 px-6 py-4 border-t flex justify-end space-x-3 mt-auto">
                     <button type="button" @click="closeModal" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200">Cancel</button>
                     <button type="submit" :disabled="form.processing" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
-                        {{ event ? 'Save Changes' : 'Add Event' }}
+                        <span v-if="form.processing">Saving...</span>
+                        <span v-else>{{ event ? 'Save Changes' : 'Add Event' }}</span>
                     </button>
                 </div>
             </form>

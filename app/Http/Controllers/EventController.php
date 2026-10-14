@@ -15,8 +15,6 @@ class EventController extends Controller
             'description' => 'nullable|string',
             'scheduled_at' => 'required|date',
             'status' => 'required|string|in:Scheduled,Completed',
-            'billing_type' => 'required|string|in:hourly,fixed_rate,administrative',
-            'fixed_fee_amount' => 'nullable|numeric|min:0',
         ]);
 
         $matter->events()->create($validated);
@@ -30,8 +28,6 @@ class EventController extends Controller
             'description' => 'nullable|string',
             'scheduled_at' => 'required|date',
             'status' => 'required|string|in:Scheduled,Completed',
-            'billing_type' => 'required|string|in:hourly,fixed_rate,administrative',
-            'fixed_fee_amount' => 'nullable|numeric|min:0',
         ]);
 
         $event->update($validated);
