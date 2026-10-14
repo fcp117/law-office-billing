@@ -15,12 +15,25 @@ const form = useForm({
     authority: '',
     status: 'Active', // Default status
     billable_type: 'Hourly',
+    flat_rate_amount: '',
 });
 
 // Update the form's client_id if the prop changes
 watch(() => props.clientId, (newId) => {
     form.client_id = newId;
 });
+
+// Watch for the modal opening to populate the form if we are editing
+watch(() => props.task, (newTask) => {
+    if (newMatter) {
+        form.title = newTask.title || '';
+        form.description = newTask.description || '';
+        form.deadline = newTask.deadline ? newTask.deadline.split('T')[0] : '';
+        form.status = newTask.status || 'Pending';
+    } else {
+        form.reset();
+    }
+}, { immediate: true });
 
 const submit = () => {
     form.post(route('matters.store'), {
