@@ -16,7 +16,6 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('practice_area')->nullable();
             $table->string('type')->nullable();
-            $table->string('billable_type')->default('Hourly');
             
             // Relational & Jurisdictional Details
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
@@ -33,6 +32,10 @@ return new class extends Migration
             $table->date('start_date')->nullable();
             $table->date('closing_date')->nullable();
             $table->text('remarks')->nullable();
+
+            // Billing Structure
+            $table->string('billing_type')->default('hourly'); // 'hourly', 'fixed_rate', 'administrative'
+            $table->decimal('fixed_fee_amount', 12, 2)->nullable();
             
             // Audit Trail
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();

@@ -10,7 +10,8 @@ class Matter extends Model
         'name', 'description', 'practice_area', 'type', 'client_id',
         'authority', 'party_represented', 'party_represented_role',
         'party_adverse', 'party_adverse_role', 'status', 'start_date',
-        'closing_date', 'remarks', 'created_by', 'modified_by', 'billable_type'
+        'closing_date', 'remarks', 'created_by', 'modified_by',
+        'billing_type', 'fixed_fee_amount'
     ];
 
     // Ensures these columns are treated as Dates, not just strings

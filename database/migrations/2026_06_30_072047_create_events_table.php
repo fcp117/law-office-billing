@@ -20,9 +20,6 @@ return new class extends Migration
             $table->dateTime('scheduled_at');
             $table->string('location')->nullable();
             $table->string('status')->default('Scheduled');
-
-            $table->string('billing_type')->default('hourly');
-            $table->decimal('fixed_fee_amount', 12, 2)->nullable();
             
             $table->timestamps();
         });

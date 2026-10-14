@@ -13,8 +13,6 @@ class Task extends Model
         'description',
         'deadline',
         'status',
-        'billing_type',
-        'fixed_fee_amount',
     ];
 
     protected $casts = [

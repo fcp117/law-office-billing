@@ -26,6 +26,9 @@ class MatterSeeder extends Seeder
 
         foreach ($clients as $client) {
             for ($i = 1; $i <= 2; $i++) {
+
+                $billingType = fake()->randomElement(['hourly', 'fixed_rate', 'administrative']);
+                $fixedFeeAmount = $billingType === 'fixed_rate' ? fake()->randomFloat(2, 10000, 100000) : null;
                 
                 // 2. Create the Matter (same as before)
                 $matter = Matter::create([
@@ -51,7 +54,9 @@ class MatterSeeder extends Seeder
                     'created_by' => User::inRandomOrder()->first()->id, 
                     'modified_by' => null,
 
-                    'billable_type' => fake()->randomElement(['Hourly', 'Flat Rate', 'Contingency', 'Non-Billable']),
+                    'billing_type' => $billingType,
+                    'fixed_fee_amount' => $fixedFeeAmount,
+
                 ]);
 
                 // 3. THE PIVOT TABLE SEEDING
