@@ -15,23 +15,7 @@ const form = useForm({
     description: '',
     deadline: '',
     status: 'Pending',
-    billing_type: 'hourly',
-    fixed_fee_amount: '',
 });
-
-// Watch for the modal opening to populate the form if we are editing
-watch(() => props.task, (newTask) => {
-    if (newTask) {
-        form.title = newTask.title || '';
-        form.description = newTask.description || '';
-        form.deadline = newTask.deadline ? newTask.deadline.split('T')[0] : '';
-        form.status = newTask.status || 'Pending';
-        form.billing_type = newTask.billing_type || 'hourly';
-        form.fixed_fee_amount = newTask.fixed_fee_amount || '';
-    } else {
-        form.reset();
-    }
-}, { immediate: true });
 
 const submit = () => {
     if (props.task) {

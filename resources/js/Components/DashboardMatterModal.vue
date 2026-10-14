@@ -14,6 +14,7 @@ const form = useForm({
     authority: '',
     status: 'Active',
     billable_type: 'Hourly',
+    flat_rate_amount: '',
 });
 
 const submit = () => {
