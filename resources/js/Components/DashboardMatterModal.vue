@@ -13,6 +13,7 @@ const form = useForm({
     name: '',
     authority: '',
     status: 'Active',
+    billable_type: 'Hourly',
 });
 
 const submit = () => {
@@ -69,6 +70,15 @@ const closeModal = () => {
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Authority / Court</label>
                         <input type="text" v-model="form.authority" placeholder="e.g. Quezon City RTC Br. 22" class="w-full rounded-md border-slate-300 shadow-sm">
                         <div v-if="form.errors.authority" class="text-red-500 text-xs mt-1">{{ form.errors.authority }}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Billable Type</label>
+                        <select v-model="form.billable_type" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                            <option value="Hourly">Hourly</option>
+                            <option value="Flat Rate">Flat Rate</option>
+                            <option value="Contingency">Contingency</option>
+                            <option value="Non-Billable">Non-Billable</option>
+                        </select>
                     </div>
 
                     <div>

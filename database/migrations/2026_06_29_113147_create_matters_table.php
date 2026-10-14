@@ -16,6 +16,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('practice_area')->nullable();
             $table->string('type')->nullable();
+            $table->string('billable_type')->default('Hourly');
             
             // Relational & Jurisdictional Details
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();

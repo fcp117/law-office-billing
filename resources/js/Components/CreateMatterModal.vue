@@ -14,6 +14,7 @@ const form = useForm({
     name: '',
     authority: '',
     status: 'Active', // Default status
+    billable_type: 'Hourly',
 });
 
 // Update the form's client_id if the prop changes
@@ -64,6 +65,15 @@ const closeModal = () => {
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Authority / Court</label>
                         <input type="text" v-model="form.authority" placeholder="e.g. Quezon City RTC Br. 22" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Billable Type</label>
+                        <select v-model="form.billable_type" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                            <option value="Hourly">Hourly</option>
+                            <option value="Flat Rate">Flat Rate</option>
+                            <option value="Contingency">Contingency</option>
+                            <option value="Non-Billable">Non-Billable</option>
+                        </select>
                     </div>
 
                     <div>

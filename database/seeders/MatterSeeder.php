@@ -50,6 +50,8 @@ class MatterSeeder extends Seeder
                     // Any random user can be the creator of the record
                     'created_by' => User::inRandomOrder()->first()->id, 
                     'modified_by' => null,
+
+                    'billable_type' => fake()->randomElement(['Hourly', 'Flat Rate', 'Contingency', 'Non-Billable']),
                 ]);
 
                 // 3. THE PIVOT TABLE SEEDING
