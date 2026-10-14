@@ -1,11 +1,11 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
-import { watch } from 'vue';
+import { watch, computed } from 'vue';
 
 const props = defineProps({
     show: Boolean,
-    matterId: [Number, String], // Directly passed from Show.vue
-    timeEntry: Object,
+    matterId: [Number, String],
+    timeEntry: Object, 
     tasks: { type: Array, default: () => [] },   // Ensure these are passed from Show.vue
     events: { type: Array, default: () => [] },  // Ensure these are passed from Show.vue
 });
@@ -30,14 +30,12 @@ const form = useForm({
     billable_type: null,
 });
 
-// Helper to format dates for datetime-local inputs
 const formatDateTime = (dateString) => {
     if (!dateString) return '';
     const d = new Date(dateString);
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
 
-// 1. Fill data when modal opens
 watch(() => props.timeEntry, (newEntry) => {
     if (newEntry && newEntry.id) {
         form.start_time = formatDateTime(newEntry.start_time);
@@ -52,7 +50,6 @@ watch(() => props.timeEntry, (newEntry) => {
     }
 }, { immediate: true });
 
-// 2. SMART FEATURE: Auto-calculate hours
 watch([() => form.start_time, () => form.end_time], ([start, end]) => {
     if (start && end) {
         const startDate = new Date(start);

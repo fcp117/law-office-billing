@@ -1,0 +1,14 @@
+1. Billable type should be on Matter
+	MatterController
+	Matter model
+	CreateMatterModal
+2. Remove billable type on Tasks and Events
+	TaskModal
+	EventModal
+	DashboardTaskModal
+	DashboardEventModal
+	Tasks migration
+	Events migration
+	Tasks model
+	Events model
+3. Modify InvoiceController to distinguish between Fixed and Time Billing
