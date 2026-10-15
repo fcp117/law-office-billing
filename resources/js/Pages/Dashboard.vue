@@ -87,7 +87,7 @@ const formatCurrency = (amount) => {
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
                 
-                <div v-if="$page.props.auth.user.role === 'Partner'" 
+                <div v-if="$page.props.auth.user?.role === 'Partner'" 
                     class="bg-blue-50 border border-blue-200 rounded-lg p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center">
                     
                     <div class="mb-4 sm:mb-0">

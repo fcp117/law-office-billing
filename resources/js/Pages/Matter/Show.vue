@@ -10,7 +10,8 @@ import EventModal from '@/Components/EventModal.vue';
 import TimeEntryModal from '@/Components/TimeEntryModal.vue';
 
 const props = defineProps({
-    matter: Object
+    matter: Object,
+    clients: Array
     });
 
 // ==========================================
@@ -118,6 +119,26 @@ const generateInvoice = () => {
         });
     }
 };
+
+// ==========================================
+// 5. CREATE AND EDIT MATTERS
+// ==========================================
+
+// Import the Matter Modal
+import DashboardMatterModal from '@/Components/DashboardMatterModal.vue';
+
+// Setup Modal State and Actions
+const isMatterModalOpen = ref(false);
+
+const openMatterModal = () => {
+    isMatterModalOpen.value = true;
+};
+
+const deleteMatter = () => {
+    if (confirm(`Are you sure you want to completely delete "${props.matter.name}"? This action will permanently wipe all associated tasks, events, and time entries.`)) {
+        router.delete(route('matters.destroy', props.matter.id));
+    }
+};
 </script>
 
 <template>
@@ -149,14 +170,25 @@ const generateInvoice = () => {
                         <div class="bg-gray-800 text-white p-6 rounded-lg shadow">
                             <h1 class="text-3xl font-bold">{{ matter.name }}</h1>
                             <p class="mt-2 text-gray-300">Client: {{ matter.client.name }} | Authority: {{ matter.authority }}</p>
+
+                            <!-- Edit & Delete Buttons -->
+                            <div class="mt-4 space-x-3">
+                                <button @click="openMatterModal" class="text-sm bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-semibold transition">
+                                    Edit Matter Details
+                                </button>
+                                <button @click="deleteMatter" class="text-sm bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-semibold transition border border-red-700">
+                                    Delete Matter
+                                </button>
+                            </div>
                         </div>
+
                         <span class="px-3 py-1 bg-green-500 text-white text-sm font-bold rounded-full">
                             {{ matter.status }}
                         </span>
                     </div>
 
                     <!-- Handling Lawyers now inside the Summary Card -->
-                    <div class="border-t border-slate-700 pt-4">
+                    <div class="border-t border-slate-700 pt-4 mt-4">
                         <h3 class="text-sm font-semibold text-gray-400 uppercase mb-2">Handling Lawyers</h3>
                         <div class="flex flex-wrap gap-4">
                             <div v-for="user in matter.users" :key="user.id" class="text-sm">
@@ -447,6 +479,13 @@ const generateInvoice = () => {
             :matter-id="matter.id"
             :time-entry="selectedTimeEntry"
             @close="isTimeEntryModalOpen = false" 
+        />
+
+        <DashboardMatterModal 
+            :show="isMatterModalOpen" 
+            :clients="clients"
+            :matter="matter"
+            @close="isMatterModalOpen = false" 
         />
 
 </template>

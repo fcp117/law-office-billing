@@ -28,8 +28,6 @@ class TaskController extends Controller
             'description' => 'nullable|string',
             'deadline' => 'required|date',
             'status' => 'required|string|in:Pending,Completed',
-            'billing_type' => 'required|string|in:hourly,fixed_rate,administrative',
-            'fixed_fee_amount' => 'nullable|numeric|min:0',
         ]);
 
         $task->update($validated);

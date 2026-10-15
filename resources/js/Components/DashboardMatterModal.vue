@@ -1,9 +1,11 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
+import { watch } from 'vue';
 
 const props = defineProps({
     show: Boolean,
     clients: Array,
+    matter: Object, // Added to handle Edit mode
 });
 
 const emit = defineEmits(['close']);
@@ -17,14 +19,35 @@ const form = useForm({
     fixed_fee_amount: '',
 });
 
+// Watch for changes to populate the form for editing
+watch(() => props.matter, (newMatter) => {
+    if (newMatter) {
+        form.client_id = newMatter.client_id || '';
+        form.name = newMatter.name || '';
+        form.authority = newMatter.authority || '';
+        form.status = newMatter.status || 'Active';
+        form.billing_type = newMatter.billing_type || 'hourly';
+        form.fixed_fee_amount = newMatter.fixed_fee_amount || '';
+    } else {
+        form.reset();
+    }
+}, { immediate: true });
+
 const submit = () => {
-    form.post(route('matters.store'), {
-        preserveScroll: true,
-        onSuccess: () => {
-            form.reset();
-            emit('close');
-        },
-    });
+    if (props.matter) {
+        form.put(route('matters.update', props.matter.id), {
+            preserveScroll: true,
+            onSuccess: () => emit('close'),
+        });
+    } else {
+        form.post(route('matters.store'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                form.reset();
+                emit('close');
+            },
+        });
+    }
 };
 
 const closeModal = () => {
@@ -40,7 +63,7 @@ const closeModal = () => {
             
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-slate-800">
-                    Create New Matter
+                    {{ matter ? 'Edit Matter' : 'Create New Matter' }}
                 </h3>
                 <button @click="closeModal" class="text-slate-400 hover:text-red-500">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -102,7 +125,8 @@ const closeModal = () => {
                 <div class="bg-slate-50 px-6 py-4 border-t flex justify-end space-x-3 mt-auto">
                     <button type="button" @click="closeModal" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200">Cancel</button>
                     <button type="submit" :disabled="form.processing" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
-                        Add Matter
+                        <span v-if="form.processing">Saving...</span>
+                        <span v-else>{{ matter ? 'Save Changes' : 'Add Matter' }}</span>
                     </button>
                 </div>
             </form>

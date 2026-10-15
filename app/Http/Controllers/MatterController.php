@@ -39,8 +39,12 @@ class MatterController extends Controller
         // Calculate the total unpaid amount for this matter
         $matter->total_unpaid_amount = $matter->invoices->sum('balance_due');
 
+        // Fetch clients for the Edit Matter modal
+        $clients = \App\Models\Client::orderBy('name', 'asc')->get();
+
         return Inertia::render('Matter/Show', [
-            'matter' => $matter
+            'matter' => $matter,
+            'clients' => $clients // Pass clients to the frontend
         ]);
     }
 
@@ -117,5 +121,29 @@ class MatterController extends Controller
         $pdf = Pdf::loadView('matters.statementofaccount-pdf', compact('matter'));
 
         return $pdf->download('Statement-of-Account-' . $matter->id . '.pdf');
+    }
+
+    public function update(Request $request, Matter $matter)
+    {
+        $validated = $request->validate([
+            'client_id' => 'required|exists:clients,id',
+            'name' => 'required|string|max:255',
+            'authority' => 'nullable|string|max:255',
+            'status' => 'required|string|in:Active,Pending,On Hold',
+            'billing_type' => 'required|string|in:hourly,fixed_rate,administrative',
+            'fixed_fee_amount' => 'nullable|numeric|min:0',
+        ]);
+
+        $matter->update($validated);
+
+        return redirect()->back()->with('success', 'Matter updated successfully.');
+    }
+
+    public function destroy(Matter $matter)
+    {
+        $matter->delete();
+
+        // Redirect to dashboard since the current Matter page will no longer exist
+        return redirect()->route('dashboard')->with('success', 'Matter deleted successfully.');
     }
 }
