@@ -6,8 +6,8 @@ import { ref } from 'vue';
 // Import our Modals
 import TaskModal from '@/Components/TaskModal.vue';
 import EventModal from '@/Components/EventModal.vue';
-
 import TimeEntryModal from '@/Components/TimeEntryModal.vue';
+import DashboardMatterModal from '@/Components/DashboardMatterModal.vue';
 
 const props = defineProps({
     matter: Object,
@@ -123,9 +123,6 @@ const generateInvoice = () => {
 // ==========================================
 // 5. CREATE AND EDIT MATTERS
 // ==========================================
-
-// Import the Matter Modal
-import DashboardMatterModal from '@/Components/DashboardMatterModal.vue';
 
 // Setup Modal State and Actions
 const isMatterModalOpen = ref(false);

@@ -1,16 +1,23 @@
+
 <script setup>
 import { useForm } from '@inertiajs/vue3';
 import { watch } from 'vue';
 
 const props = defineProps({
     show: Boolean,
-    clients: Array,
-    matter: Object, // Added to handle Edit mode
+    clients: {
+        type: Array,
+        default: () => [],
+    },
+    matter: {
+        type: Object,
+        default: null,
+    },
 });
 
 const emit = defineEmits(['close']);
 
-const form = useForm({
+const emptyMatter = () => ({
     client_id: '',
     name: '',
     authority: '',
@@ -19,40 +26,73 @@ const form = useForm({
     fixed_fee_amount: '',
 });
 
-// Watch for changes to populate the form for editing
-watch(() => props.matter, (newMatter) => {
-    if (newMatter) {
-        form.client_id = newMatter.client_id || '';
-        form.name = newMatter.name || '';
-        form.authority = newMatter.authority || '';
-        form.status = newMatter.status || 'Active';
-        form.billing_type = newMatter.billing_type || 'hourly';
-        form.fixed_fee_amount = newMatter.fixed_fee_amount || '';
-    } else {
+const form = useForm(emptyMatter());
+
+
+watch(
+    () => props.show,
+    (isOpen) => {
+        if (!isOpen) {
+            form.clearErrors();
+            return;
+        }
+
+        const matter = props.matter;
+
+        if (matter?.id) {
+            form.defaults({
+                client_id: matter.client_id ?? '',
+                name: matter.name ?? '',
+                authority: matter.authority ?? '',
+                status: matter.status ?? 'Active',
+                billing_type: (matter.billing_type || 'hourly').toLowerCase(),
+                fixed_fee_amount: matter.fixed_fee_amount ?? '',
+            });
+        } else {
+            form.defaults(emptyMatter());
+        }
+
         form.reset();
-    }
-}, { immediate: true });
+        form.clearErrors();
+    },
+    { immediate: true }
+);
 
 const submit = () => {
-    if (props.matter) {
+
+    console.log('Modal visible:', props.show);
+    console.log('Matter:', props.matter);
+    console.log('Matter ID:', props.matter?.id);
+    console.log('Form data:', form.data());
+    
+    if (form.processing) return;
+
+    if (props.matter?.id) {
         form.put(route('matters.update', props.matter.id), {
             preserveScroll: true,
             onSuccess: () => emit('close'),
+            onError: (errors) => {
+                console.error('Matter update validation errors:', errors);
+            },
+            onFinish: () => {
+                console.log('Matter update request finished.');
+            },
         });
     } else {
         form.post(route('matters.store'), {
             preserveScroll: true,
-            onSuccess: () => {
-                form.reset();
-                emit('close');
+            onSuccess: () => emit('close'),
+            onError: (errors) => {
+                console.error('Matter creation validation errors:', errors);
+            },
+            onFinish: () => {
+                console.log('Matter creation request finished.');
             },
         });
     }
 };
 
 const closeModal = () => {
-    form.reset();
-    form.clearErrors();
     emit('close');
 };
 </script>
@@ -70,11 +110,17 @@ const closeModal = () => {
                 </button>
             </div>
 
+            <!-- FIX 3: Removed HTML5 "required" attributes so Laravel can safely return red Inertia errors -->
             <form @submit.prevent="submit">
                 <div class="p-6 space-y-4">
+                    
+                    <div v-if="Object.keys(form.errors).length > 0" class="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-xs font-semibold">
+                        Please check the highlighted fields below.
+                    </div>
+
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Assign to Client *</label>
-                        <select v-model="form.client_id" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                        <select v-model="form.client_id" class="w-full rounded-md border-slate-300 shadow-sm">
                             <option value="" disabled>Select a client...</option>
                             <option v-for="client in clients" :key="client.id" :value="client.id">
                                 {{ client.name }}
@@ -85,7 +131,7 @@ const closeModal = () => {
 
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Matter / Case Title *</label>
-                        <input type="text" v-model="form.name" placeholder="e.g. Smith vs. Jones" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                        <input type="text" v-model="form.name" placeholder="e.g. Smith vs. Jones" class="w-full rounded-md border-slate-300 shadow-sm">
                         <div v-if="form.errors.name" class="text-red-500 text-xs mt-1">{{ form.errors.name }}</div>
                     </div>
 
@@ -107,7 +153,7 @@ const closeModal = () => {
 
                     <div v-if="form.billing_type === 'fixed_rate'">
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Fixed Fee Amount *</label>
-                        <input type="number" step="0.01" v-model="form.fixed_fee_amount" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                        <input type="number" step="0.01" v-model="form.fixed_fee_amount" class="w-full rounded-md border-slate-300 shadow-sm">
                         <div v-if="form.errors.fixed_fee_amount" class="text-red-500 text-xs mt-1">{{ form.errors.fixed_fee_amount }}</div>
                     </div>
 
@@ -126,7 +172,7 @@ const closeModal = () => {
                     <button type="button" @click="closeModal" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200">Cancel</button>
                     <button type="submit" :disabled="form.processing" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
                         <span v-if="form.processing">Saving...</span>
-                        <span v-else>{{ matter ? 'Save Changes' : 'Add Matter' }}</span>
+                        <span v-else>{{ matter?.id ? 'Save Changes' : 'Add Matter' }}</span>
                     </button>
                 </div>
             </form>
