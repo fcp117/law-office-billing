@@ -115,14 +115,14 @@ const closeModal = () => {
                     
                     <!-- NEW SELECTION DROPDOWN -->
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Link to Task or Event (Optional)</label>
-                        <select v-model="form.billable_selection" class="w-full rounded-md border-slate-300 shadow-sm bg-white">
-                            <option value="">General Matter Time (Hourly)</option>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Link to Task or Event *</label>
+                        <select v-model="form.billable_selection" class="w-full rounded-md border-slate-300 shadow-sm bg-white" required>
+                            <option value="" disabled>Select a task or event...</option> <!-- Changed this line -->
                             <option v-for="option in billableOptions" :key="option.type + option.id" :value="`${option.type}|${option.id}`">
                                 {{ option.label }}
                             </option>
                         </select>
-                        <p class="text-xs text-slate-400 mt-1">Leave blank to bill this time at the standard hourly rate.</p>
+                        <div v-if="form.errors.billable_selection" class="text-red-500 text-xs mt-1">{{ form.errors.billable_selection }}</div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">

@@ -11,6 +11,11 @@ class TimeEntryController extends Controller
 {
     public function store(Request $request, Matter $matter)
     {
+        // Block new time entries if the matter is finalized
+        if ($matter->status === 'Completed') {
+            return redirect()->back()->with('error', 'This matter is closed. No further time entries can be logged.');
+        }
+    
         $request->validate([
             'start_time' => 'required|date',
             'end_time' => 'required|date|after:start_time',
@@ -46,6 +51,11 @@ class TimeEntryController extends Controller
 
     public function update(Request $request, TimeEntry $timeEntry)
     {
+        // Block new time entries if the matter is finalized
+        if ($matter->status === 'Completed') {
+            return redirect()->back()->with('error', 'This matter is closed. No further time entries can be logged.');
+        }
+    
         $request->validate([
             'start_time' => 'required|date',
             'end_time' => 'required|date|after:start_time',

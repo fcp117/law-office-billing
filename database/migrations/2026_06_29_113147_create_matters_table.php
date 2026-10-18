@@ -35,7 +35,9 @@ return new class extends Migration
 
             // Billing Structure
             $table->string('billing_type')->default('hourly'); // 'hourly', 'fixed_rate', 'administrative'
-            $table->decimal('fixed_fee_amount', 12, 2)->nullable();
+            $table->decimal('contingency_percentage', 5, 2)->nullable(); // e.g., 30.00
+            $table->decimal('settlement_judgment', 15, 2)->nullable();
+            $table->decimal('fixed_fee_amount', 15, 2)->nullable();
             
             // Audit Trail
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();

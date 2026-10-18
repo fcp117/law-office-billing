@@ -20,57 +20,56 @@ class InvoiceController extends Controller
             'issue_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:issue_date',
             'remarks' => 'nullable|string',
+            'settlement_judgment' => 'nullable|numeric'
         ]);
 
-        $unbilledEntries = $matter->timeEntries()->with('billable')->whereNull('invoice_id')->get();
-
-        if ($unbilledEntries->isEmpty()) {
-            return redirect()->back()->with('error', 'No unbilled time entries found for this matter.');
+        // 1. Enforce "Ripe for Billing" rules
+        if (in_array($matter->billing_type, ['fixed_rate', 'contingency']) && strtolower($matter->status) !== 'completed') {
+            return redirect()->back()->with('error', 'Fixed Rate and Contingency matters can only be billed once marked as Completed.');
         }
 
-        $hourlyTotal = 0;
-        $fixedRateItems = collect();
-        $entriesToInvoice = collect(); // Tracks only the time entries that are eligible to be billed right now
+        // Check if a fixed_rate or contingency matter was already billed to prevent double-billing
+        if (in_array($matter->billing_type, ['fixed_rate', 'contingency']) && $matter->invoices()->exists()) {
+            return redirect()->back()->with('error', 'This ' . str_replace('_', ' ', $matter->billing_type) . ' matter has already been billed.');
+        }
 
-        foreach ($unbilledEntries as $entry) {
-            $billable = $entry->billable;
+        // Get unbilled time entries to attach to the invoice (so they are cleared from the queue)
+        $unbilledEntries = $matter->timeEntries()->whereNull('invoice_id')->get();
+        $subtotalFees = 0;
 
-            if ($billable && $billable->billing_type === 'fixed_rate') {
-                // Only process fixed-rate time entries if the parent Task or Event is completed
-                if (strtolower($billable->status) === 'completed') {
-                    $key = class_basename($billable) . '-' . $billable->id;
-                    
-                    if (!$fixedRateItems->has($key)) {
-                        $fixedRateItems->put($key, $billable->fixed_fee_amount);
-                    }
-                    
-                    $entriesToInvoice->push($entry);
-                }
-                // If not completed, it is intentionally skipped and left in the unbilled queue
-            } elseif ($billable && $billable->billing_type === 'administrative') {
-                // Attach administrative time to the invoice to clear it from the queue, 
-                // but it contributes $0.00 to the totals.
-                $entriesToInvoice->push($entry);
-            } else {
-                // Standard hourly billing
-                $hourlyTotal += $entry->amount;
-                $entriesToInvoice->push($entry);
+        // 2. Calculate Subtotal based on Matter Billing Type
+        if ($matter->billing_type === 'fixed_rate') {
+            // Bill the flat fee defined on the Matter
+            $subtotalFees = $matter->fixed_fee_amount ?? 0;
+            
+        } elseif ($matter->billing_type === 'contingency') {
+            // Bill the contingency percentage against the final settlement judgment
+            // Ensure settlement_judgment and contingency_percentage are provided either in request or database
+            $settlement = $request->settlement_judgment ?? $matter->settlement_judgment ?? 0;
+            $percentage = $matter->contingency_percentage ?? 30; // Default to 30% if undefined
+            
+            $subtotalFees = $settlement * ($percentage / 100);
+            
+        } elseif ($matter->billing_type === 'hourly') {
+            // Sum up the active time entries for hourly matters
+            if ($unbilledEntries->isEmpty()) {
+                return redirect()->back()->with('error', 'No unbilled time entries found for this hourly matter.');
             }
+            $subtotalFees = $unbilledEntries->sum('amount');
+            
+        } elseif ($matter->billing_type === 'administrative') {
+            // Administrative matters do not generate revenue
+            $subtotalFees = 0;
         }
 
-        if ($entriesToInvoice->isEmpty()) {
-            return redirect()->back()->with('error', 'No time entries are ready for invoicing. Fixed-rate tasks must be marked as Completed.');
-        }
-
-        $fixedRateTotal = $fixedRateItems->sum();
-        $subtotalFees = $hourlyTotal + $fixedRateTotal;
-
-        $vatAmount = $subtotalFees * 0.12;
+        // 3. Finalize Calculations
+        $vatAmount = $subtotalFees * 0.12; // 12% VAT
         $totalAmount = $subtotalFees + $vatAmount;
         
         $invoiceNumber = 'INV-' . date('Ymd') . '-' . rand(1000, 9999);
 
-        DB::transaction(function () use ($request, $matter, $entriesToInvoice, $totalAmount, $invoiceNumber) {
+        // 4. Create the Invoice and Link Entries
+        DB::transaction(function () use ($request, $matter, $unbilledEntries, $totalAmount, $invoiceNumber) {
             
             $invoice = Invoice::create([
                 'matter_id' => $matter->id,
@@ -83,11 +82,18 @@ class InvoiceController extends Controller
                 'created_by' => $request->user()->id,
             ]);
 
-            // Update only the eligible entries, leaving incomplete fixed-rate entries null
-            foreach ($entriesToInvoice as $entry) {
+            // Clear all unbilled entries from the queue by associating them with this invoice
+            foreach ($unbilledEntries as $entry) {
                 $entry->update([
                     'invoice_id' => $invoice->id,
                     'modified_by' => $request->user()->id,
+                ]);
+            }
+            
+            // If contingency, update the Matter with the final settlement amount used
+            if ($matter->billing_type === 'contingency' && $request->filled('settlement_judgment')) {
+                $matter->update([
+                    'settlement_judgment' => $request->settlement_judgment
                 ]);
             }
         });

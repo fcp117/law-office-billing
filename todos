@@ -1,4 +1,4 @@
-1. Billable type should be on Matter
+<!-- 1. Billable type should be on Matter
 	MatterController
 	Matter model
 	CreateMatterModal
@@ -10,6 +10,9 @@
 	Tasks migration
 	Events migration
 	Tasks model
-	Events model
+	Events model -->
 3. Modify InvoiceController to distinguish between Fixed and Time Billing
 4. Fix DashboardTimeEntryModal by making link to Task or Event work
+5. Hide Add Tasks and Add Events button if matter.status == 'Completed'
+	Matters/Show.vue
+6. Exclude Completed matters in dropdown selection in Add Tasks and Add Events in Dashboard.vue

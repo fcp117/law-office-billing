@@ -206,7 +206,7 @@ const deleteMatter = () => {
                     <div class="bg-white p-6 rounded-lg shadow">
                         <div class="flex justify-between items-center mb-4 border-b pb-2">
                             <h2 class="text-xl font-bold mb-4 border-b pb-2">Tasks</h2>
-                            <button @click="openTaskModal()" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200">
+                            <button v-if="matter.status !== 'Completed'" @click="openTaskModal()" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200">
                                     + Add Task
                             </button>
                         </div>
@@ -245,7 +245,7 @@ const deleteMatter = () => {
                     <div class="bg-white p-6 rounded-lg shadow">
                         <div class="flex justify-between items-center mb-4 border-b pb-2">
                             <h2 class="text-xl font-bold mb-4 border-b pb-2">Events</h2>
-                            <button @click="openEventModal()" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200">
+                            <button v-if="matter.status !== 'Completed'" @click="openEventModal()" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200">
                                     + Add Event
                             </button>
                         </div>
@@ -291,7 +291,9 @@ const deleteMatter = () => {
                         <div class="flex justify-between items-center border-b pb-2 mb-4">
                             <h2 class="text-xl font-bold">Time Entries (Running Billable)</h2>
                             <div class="space-x-3">
-                                <button @click="openTimeEntryModal()" class="bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded text-sm font-semibold hover:bg-purple-200 transition">
+                                <button v-if="matter.status !== 'Completed'"
+                                        @click="openTimeEntryModal()" 
+                                        class="bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded text-sm font-semibold hover:bg-purple-200 transition">
                                     + Log Hours
                                 </button>
                             </div>
@@ -475,6 +477,8 @@ const deleteMatter = () => {
             :show="isTimeEntryModalOpen" 
             :matter-id="matter.id"
             :time-entry="selectedTimeEntry"
+            :tasks="matter.tasks"   
+            :events="matter.events"
             @close="isTimeEntryModalOpen = false" 
         />
 

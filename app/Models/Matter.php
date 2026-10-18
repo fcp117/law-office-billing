@@ -11,7 +11,7 @@ class Matter extends Model
         'authority', 'party_represented', 'party_represented_role',
         'party_adverse', 'party_adverse_role', 'status', 'start_date',
         'closing_date', 'remarks', 'created_by', 'modified_by',
-        'billing_type', 'fixed_fee_amount'
+        'billing_type', 'fixed_fee_amount', 'contingency_percentage', 'settlement_judgment',
     ];
 
     // Ensures these columns are treated as Dates, not just strings

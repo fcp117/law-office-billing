@@ -47,6 +47,7 @@ watch(
                 status: matter.status ?? 'Active',
                 billing_type: (matter.billing_type || 'hourly').toLowerCase(),
                 fixed_fee_amount: matter.fixed_fee_amount ?? '',
+                contingency_percentage: matter.contingency_percentage ?? '',
             });
         } else {
             form.defaults(emptyMatter());
@@ -146,6 +147,7 @@ const closeModal = () => {
                         <select v-model="form.billing_type" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
                             <option value="hourly">Hourly</option>
                             <option value="fixed_rate">Fixed Rate</option>
+                            <option value="contingency">Contingency</option>
                             <option value="administrative">Administrative (Internal)</option>
                         </select>
                         <div v-if="form.errors.billing_type" class="text-red-500 text-xs mt-1">{{ form.errors.billing_type }}</div>
@@ -157,12 +159,19 @@ const closeModal = () => {
                         <div v-if="form.errors.fixed_fee_amount" class="text-red-500 text-xs mt-1">{{ form.errors.fixed_fee_amount }}</div>
                     </div>
 
+                    <div v-if="form.billing_type === 'contingency'">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Contingency Percentage *</label>
+                        <input type="number" step="0.01" v-model="form.contingency_percentage" class="w-full rounded-md border-slate-300 shadow-sm">
+                        <div v-if="form.errors.contingency_percentage" class="text-red-500 text-xs mt-1">{{ form.errors.contingency_percentage }}</div>
+                    </div>
+
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Initial Status</label>
                         <select v-model="form.status" class="w-full rounded-md border-slate-300 shadow-sm">
                             <option value="Active">Active</option>
                             <option value="Pending">Pending</option>
                             <option value="On Hold">On Hold</option>
+                            <option value="Completed">Completed</option>
                         </select>
                         <div v-if="form.errors.status" class="text-red-500 text-xs mt-1">{{ form.errors.status }}</div>
                     </div>

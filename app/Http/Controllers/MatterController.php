@@ -55,9 +55,10 @@ class MatterController extends Controller
             'client_id' => 'required|exists:clients,id', // Ensures the client actually exists
             'name' => 'required|string|max:255',
             'authority' => 'nullable|string|max:255',
-            'status' => 'required|string|in:Active,Pending,On Hold',
-            'billing_type' => 'required|string|in:hourly,fixed_rate,administrative',
+            'status' => 'required|string|in:Active,Pending,On Hold,Completed',
+            'billing_type' => 'required|string|in:hourly,fixed_rate,contingency,administrative',
             'fixed_fee_amount' => 'nullable|numeric|min:0',
+            'contingency_percentage' => 'nullable|numeric|min:0',
         ]);
 
         // 2. Create the new Matter in the database
@@ -129,9 +130,10 @@ class MatterController extends Controller
             'client_id' => 'required|exists:clients,id',
             'name' => 'required|string|max:255',
             'authority' => 'nullable|string|max:255',
-            'status' => 'required|string|in:Active,Pending,On Hold',
-            'billing_type' => 'required|string|in:hourly,fixed_rate,administrative',
+            'status' => 'required|string|in:Active,Pending,On Hold,Completed',
+            'billing_type' => 'required|string|in:hourly,fixed_rate,contingency,administrative',
             'fixed_fee_amount' => 'nullable|numeric|min:0',
+            'contingency_percentage' => 'nullable|numeric|min:0',
         ]);
 
         $matter->update($validated);
