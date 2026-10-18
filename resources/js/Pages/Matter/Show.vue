@@ -168,6 +168,33 @@ const deleteMatter = () => {
                             <h1 class="text-3xl font-bold">{{ matter.name }}</h1>
                             <p class="mt-2 text-gray-300">Client: {{ matter.client.name }} | Authority: {{ matter.authority }}</p>
 
+                            <!-- Billing Information Summary -->
+                            <div class="mt-4 p-3 bg-slate-700/50 rounded border border-slate-600 inline-block text-sm">
+                                <span class="text-gray-400">Billing Type:</span> 
+                                <span class="text-white font-medium capitalize ml-1 mr-4">
+                                    {{ matter.billing_type ? matter.billing_type.replace('_', ' ') : 'N/A' }}
+                                </span>
+
+                                <template v-if="matter.billing_type === 'fixed_rate'">
+                                    <span class="text-gray-400 border-l border-slate-500 pl-4">Fixed Fee:</span>
+                                    <span class="text-white font-medium ml-1">
+                                        Php {{ parseFloat(matter.fixed_fee_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                                    </span>
+                                </template>
+
+                                <template v-if="matter.billing_type === 'contingency'">
+                                    <span class="text-gray-400 border-l border-slate-500 pl-4">Contingency Rate:</span>
+                                    <span class="text-white font-medium ml-1 mr-4">
+                                        {{ matter.contingency_percentage || 0 }}%
+                                    </span>
+                                    
+                                    <span class="text-gray-400 border-l border-slate-500 pl-4">Settlement / Judgment:</span>
+                                    <span class="text-white font-medium ml-1">
+                                        Php {{ parseFloat(matter.settlement_judgment || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                                    </span>
+                                </template>
+                            </div>
+
                             <!-- Edit & Delete Buttons -->
                             <div class="mt-4 space-x-3">
                                 <button @click="openMatterModal" class="text-sm bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-semibold transition">

@@ -59,6 +59,8 @@ class MatterController extends Controller
             'billing_type' => 'required|string|in:hourly,fixed_rate,contingency,administrative',
             'fixed_fee_amount' => 'nullable|numeric|min:0',
             'contingency_percentage' => 'nullable|numeric|min:0',
+            'settlement_judgment' => 'nullable|numeric|min:0',
+
         ]);
 
         // 2. Create the new Matter in the database
@@ -134,6 +136,7 @@ class MatterController extends Controller
             'billing_type' => 'required|string|in:hourly,fixed_rate,contingency,administrative',
             'fixed_fee_amount' => 'nullable|numeric|min:0',
             'contingency_percentage' => 'nullable|numeric|min:0',
+            'settlement_judgment' => 'nullable|numeric|min:0',
         ]);
 
         $matter->update($validated);

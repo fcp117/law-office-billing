@@ -24,6 +24,7 @@ const emptyMatter = () => ({
     status: 'Active',
     billing_type: 'hourly',
     fixed_fee_amount: '',
+    settlement_judgment: '',
 });
 
 const form = useForm(emptyMatter());
@@ -48,6 +49,7 @@ watch(
                 billing_type: (matter.billing_type || 'hourly').toLowerCase(),
                 fixed_fee_amount: matter.fixed_fee_amount ?? '',
                 contingency_percentage: matter.contingency_percentage ?? '',
+                settlement_judgment: matter.settlement_judgment ?? '',
             });
         } else {
             form.defaults(emptyMatter());
@@ -159,10 +161,18 @@ const closeModal = () => {
                         <div v-if="form.errors.fixed_fee_amount" class="text-red-500 text-xs mt-1">{{ form.errors.fixed_fee_amount }}</div>
                     </div>
 
-                    <div v-if="form.billing_type === 'contingency'">
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Contingency Percentage *</label>
-                        <input type="number" step="0.01" v-model="form.contingency_percentage" class="w-full rounded-md border-slate-300 shadow-sm">
-                        <div v-if="form.errors.contingency_percentage" class="text-red-500 text-xs mt-1">{{ form.errors.contingency_percentage }}</div>
+                    <div v-if="form.billing_type === 'contingency'" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Contingency Percentage *</label>
+                            <input type="number" step="0.01" v-model="form.contingency_percentage" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                            <div v-if="form.errors.contingency_percentage" class="text-red-500 text-xs mt-1">{{ form.errors.contingency_percentage }}</div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Settlement / Judgment Amount</label>
+                            <input type="number" step="0.01" v-model="form.settlement_judgment" placeholder="Amount if finalized" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                            <div v-if="form.errors.settlement_judgment" class="text-red-500 text-xs mt-1">{{ form.errors.settlement_judgment }}</div>
+                        </div>
                     </div>
 
                     <div>
