@@ -23,43 +23,51 @@ class InvoiceController extends Controller
             'settlement_judgment' => 'nullable|numeric'
         ]);
 
+        $billingType = strtolower($matter->billing_type);
+        $status = strtolower($matter->status);
+
         // 1. Enforce "Ripe for Billing" rules
-        if (in_array($matter->billing_type, ['fixed_rate', 'contingency']) && strtolower($matter->status) !== 'completed') {
-            return redirect()->back()->with('error', 'Fixed Rate and Contingency matters can only be billed once marked as Completed.');
+        if (in_array($billingType, ['fixed_rate', 'contingency']) && $status !== 'completed') {
+            return back()->withErrors(['message' => 'Fixed Rate and Contingency matters can only be billed once marked as "Completed".']);
         }
 
-        // Check if a fixed_rate or contingency matter was already billed to prevent double-billing
-        if (in_array($matter->billing_type, ['fixed_rate', 'contingency']) && $matter->invoices()->exists()) {
-            return redirect()->back()->with('error', 'This ' . str_replace('_', ' ', $matter->billing_type) . ' matter has already been billed.');
+        if (in_array($billingType, ['fixed_rate', 'contingency']) && $matter->invoices()->count() > 0) {
+            return back()->withErrors(['message' => 'This matter has already been billed.']);
         }
 
-        // Get unbilled time entries to attach to the invoice (so they are cleared from the queue)
-        $unbilledEntries = $matter->timeEntries()->whereNull('invoice_id')->get();
         $subtotalFees = 0;
 
         // 2. Calculate Subtotal based on Matter Billing Type
-        if ($matter->billing_type === 'fixed_rate') {
-            // Bill the flat fee defined on the Matter
-            $subtotalFees = $matter->fixed_fee_amount ?? 0;
+        if ($billingType === 'fixed_rate') {
+            $subtotalFees = (float) $matter->fixed_fee_amount;
             
-        } elseif ($matter->billing_type === 'contingency') {
-            // Bill the contingency percentage against the final settlement judgment
-            // Ensure settlement_judgment and contingency_percentage are provided either in request or database
-            $settlement = $request->settlement_judgment ?? $matter->settlement_judgment ?? 0;
-            $percentage = $matter->contingency_percentage ?? 30; // Default to 30% if undefined
+            if ($subtotalFees <= 0) {
+                return back()->withErrors(['message' => 'Cannot bill: Fixed fee amount is zero or not set.']);
+            }
+            
+        } elseif ($billingType === 'contingency') {
+            // Check request payload first, fallback to the saved matter value
+            $settlement = (float) ($request->settlement_judgment ?? $matter->settlement_judgment ?? 0);
+            $percentage = (float) ($matter->contingency_percentage ?? 0);
+            
+            if ($settlement <= 0) {
+                return back()->withErrors(['message' => 'Cannot bill: A Settlement or Judgment amount is required.']);
+            }
+            if ($percentage <= 0) {
+                return back()->withErrors(['message' => 'Cannot bill: Contingency percentage is not set.']);
+            }
             
             $subtotalFees = $settlement * ($percentage / 100);
             
-        } elseif ($matter->billing_type === 'hourly') {
-            // Sum up the active time entries for hourly matters
+        } elseif ($billingType === 'hourly') {
+            $unbilledEntries = $matter->timeEntries()->whereNull('invoice_id')->get();
             if ($unbilledEntries->isEmpty()) {
-                return redirect()->back()->with('error', 'No unbilled time entries found for this hourly matter.');
+                return back()->withErrors(['message' => 'Cannot bill: No unbilled time entries found.']);
             }
             $subtotalFees = $unbilledEntries->sum('amount');
             
-        } elseif ($matter->billing_type === 'administrative') {
-            // Administrative matters do not generate revenue
-            $subtotalFees = 0;
+        } else {
+            return back()->withErrors(['message' => 'Administrative matters cannot be billed.']);
         }
 
         // 3. Finalize Calculations
@@ -69,7 +77,7 @@ class InvoiceController extends Controller
         $invoiceNumber = 'INV-' . date('Ymd') . '-' . rand(1000, 9999);
 
         // 4. Create the Invoice and Link Entries
-        DB::transaction(function () use ($request, $matter, $unbilledEntries, $totalAmount, $invoiceNumber) {
+        DB::transaction(function () use ($request, $matter, $totalAmount, $invoiceNumber, $billingType) {
             
             $invoice = Invoice::create([
                 'matter_id' => $matter->id,
@@ -77,28 +85,26 @@ class InvoiceController extends Controller
                 'issue_date' => Carbon::parse($request->issue_date),
                 'due_date' => Carbon::parse($request->due_date),
                 'total_amount' => $totalAmount,
-                'status' => 'draft',
+                'status' => 'Sent', // Mark as Sent or Draft
                 'remarks' => $request->remarks,
                 'created_by' => $request->user()->id,
             ]);
 
-            // Clear all unbilled entries from the queue by associating them with this invoice
-            foreach ($unbilledEntries as $entry) {
-                $entry->update([
-                    'invoice_id' => $invoice->id,
-                    'modified_by' => $request->user()->id,
-                ]);
-            }
+            // Link unbilled time entries to clear them from the queue (so you maintain a record of time spent even on fixed fee matters)
+            $matter->timeEntries()->whereNull('invoice_id')->update([
+                'invoice_id' => $invoice->id,
+                'modified_by' => $request->user()->id,
+            ]);
             
-            // If contingency, update the Matter with the final settlement amount used
-            if ($matter->billing_type === 'contingency' && $request->filled('settlement_judgment')) {
+            // If a new settlement value was passed in the request, save it to the Matter record
+            if ($billingType === 'contingency' && $request->filled('settlement_judgment')) {
                 $matter->update([
                     'settlement_judgment' => $request->settlement_judgment
                 ]);
             }
         });
 
-        return redirect()->back()->with('success', 'Invoice generated successfully.');
+        return back()->with('success', 'Invoice generated successfully.');
     }
 
     /**

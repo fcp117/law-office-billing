@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 const props = defineProps({
     invoice: {
@@ -8,6 +9,12 @@ const props = defineProps({
         required: true
     }
 });
+
+// Determine Billing Type Flags
+const billingType = computed(() => props.invoice.matter?.billing_type?.toLowerCase() || 'hourly');
+const isHourly = computed(() => billingType.value === 'hourly');
+const isFixedRate = computed(() => billingType.value === 'fixed_rate');
+const isContingency = computed(() => billingType.value === 'contingency');
 
 // Format date to match 'F d, Y' (e.g., October 9, 2026)
 const formatLongDate = (dateString) => {
@@ -62,7 +69,7 @@ const formatCurrency = (amount) => {
         </template>
 
         <div class="py-12">
-            <!-- Main Statement Document Wrapper (Styled like an official paper sheet) -->
+            <!-- Main Statement Document Wrapper -->
             <div class="max-w-4xl mx-auto bg-white p-10 shadow-sm rounded-lg border border-slate-200 space-y-8 print:shadow-none print:border-none print:p-0">
                 
                 <!-- Firm Letterhead & Invoice Header Table -->
@@ -111,6 +118,30 @@ const formatCurrency = (amount) => {
                     </table>
                 </div>
 
+                <!-- Billing Terms Summary (For Fixed Rate & Contingency) -->
+                <div v-if="isFixedRate || isContingency" class="bg-slate-50 border border-slate-200 p-4 rounded-md">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Billing Terms</h4>
+                    <table class="w-full border-collapse text-xs">
+                        <tr v-if="isFixedRate">
+                            <td class="font-bold text-slate-700 py-1" style="width: 20%;">BILLING TYPE:</td>
+                            <td class="text-slate-800 py-1" style="width: 30%;">Fixed Rate</td>
+                            <td class="font-bold text-slate-700 py-1" style="width: 20%;">FIXED FEE AMOUNT:</td>
+                            <td class="text-slate-800 py-1" style="width: 30%;">{{ formatCurrency(invoice.matter?.fixed_fee_amount) }}</td>
+                        </tr>
+                        
+                        <tr v-if="isContingency">
+                            <td class="font-bold text-slate-700 py-1" style="width: 20%;">BILLING TYPE:</td>
+                            <td class="text-slate-800 py-1" style="width: 30%;">Contingency</td>
+                            <td class="font-bold text-slate-700 py-1" style="width: 20%;">CONTINGENCY RATE:</td>
+                            <td class="text-slate-800 py-1" style="width: 30%;">{{ invoice.matter?.contingency_percentage }}%</td>
+                        </tr>
+                        <tr v-if="isContingency">
+                            <td class="font-bold text-slate-700 py-1">SETTLEMENT / JUDGMENT:</td>
+                            <td class="text-slate-800 py-1" colspan="3">{{ formatCurrency(invoice.matter?.settlement_judgment) }}</td>
+                        </tr>
+                    </table>
+                </div>
+
                 <!-- Professional Services Section Title -->
                 <div>
                     <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-3">
@@ -124,10 +155,11 @@ const formatCurrency = (amount) => {
                                 <tr class="bg-slate-900 text-white uppercase tracking-wider">
                                     <th class="py-2.5 px-3" style="width: 12%;">Date</th>
                                     <th class="py-2.5 px-3" style="width: 15%;">Timekeeper</th>
-                                    <th class="py-2.5 px-3" style="width: 43%;">Description of Services</th>
+                                    <!-- Expand description width dynamically when Rate/Amount columns are hidden -->
+                                    <th class="py-2.5 px-3" :style="{ width: isHourly ? '43%' : '63%' }">Description of Services</th>
                                     <th class="py-2.5 px-3 text-center" style="width: 10%;">Hours</th>
-                                    <th class="py-2.5 px-3 text-right" style="width: 10%;">Rate</th>
-                                    <th class="py-2.5 px-3 text-right" style="width: 10%;">Amount</th>
+                                    <th v-if="isHourly" class="py-2.5 px-3 text-right" style="width: 10%;">Rate</th>
+                                    <th v-if="isHourly" class="py-2.5 px-3 text-right" style="width: 10%;">Amount</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-200">
@@ -136,8 +168,8 @@ const formatCurrency = (amount) => {
                                     <td class="py-2.5 px-3 font-bold text-slate-800">{{ entry.user?.name || 'Lawyer' }}</td>
                                     <td class="py-2.5 px-3 text-slate-600">{{ entry.description }}</td>
                                     <td class="py-2.5 px-3 text-center text-slate-600">{{ Number(entry.hours).toFixed(2) }}</td>
-                                    <td class="py-2.5 px-3 text-right text-slate-600">{{ formatCurrency(entry.hourly_rate) }}</td>
-                                    <td class="py-2.5 px-3 text-right font-bold text-slate-900">{{ formatCurrency(entry.amount) }}</td>
+                                    <td v-if="isHourly" class="py-2.5 px-3 text-right text-slate-600">{{ formatCurrency(entry.hourly_rate) }}</td>
+                                    <td v-if="isHourly" class="py-2.5 px-3 text-right font-bold text-slate-900">{{ formatCurrency(entry.amount) }}</td>
                                 </tr>
                             </tbody>
                         </table>
