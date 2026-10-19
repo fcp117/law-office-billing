@@ -22,7 +22,7 @@ const billableOptions = computed(() => {
 
 const form = useForm({
     start_time: '',
-    end_time: '',
+     /* end_time: '', */
     hours: '',
     description: '',
     billable_selection: '', // A temporary field to hold the combined ID and Type
@@ -50,7 +50,7 @@ watch(() => props.timeEntry, (newEntry) => {
     }
 }, { immediate: true });
 
-watch([() => form.start_time, () => form.end_time], ([start, end]) => {
+/* watch([() => form.start_time, () => form.end_time], ([start, end]) => {
     if (start && end) {
         const startDate = new Date(start);
         const endDate = new Date(end);
@@ -62,7 +62,7 @@ watch([() => form.start_time, () => form.end_time], ([start, end]) => {
             form.hours = 0;
         }
     }
-});
+}); */
 
 const submit = () => {
     // Split the selection back into the database columns
@@ -124,27 +124,35 @@ const closeModal = () => {
                         </select>
                         <div v-if="form.errors.billable_selection" class="text-red-500 text-xs mt-1">{{ form.errors.billable_selection }}</div>
                     </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Start Time *</label>
-                            <input type="datetime-local" v-model="form.start_time" class="w-full rounded-md border-slate-300 shadow-sm" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">End Time *</label>
-                            <input type="datetime-local" v-model="form.end_time" class="w-full rounded-md border-slate-300 shadow-sm" required>
-                        </div>
-                    </div>
                     
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Total Hours</label>
-                        <input type="number" step="0.01" v-model="form.hours" class="w-full rounded-md border-slate-300 shadow-sm bg-slate-50 text-slate-500 font-bold" readonly>
-                    </div>
-
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Work Description *</label>
                         <textarea v-model="form.description" rows="3" class="w-full rounded-md border-slate-300 shadow-sm" required></textarea>
                     </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Start Time *</label>
+                            <input type="date" v-model="form.start_time" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                        </div>
+                        <!-- <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">End Time *</label>
+                            <input type="datetime-local" v-model="form.end_time" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                        </div> -->
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Hours *</label>
+                            <input type="number" step="0.25" v-model="form.hours" class="w-full rounded-md border-slate-300 shadow-sm">
+                            <div v-if="form.errors.hours" class="text-red-500 text-xs mt-1">{{ form.errors.hours }}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Hours</label>
+                        <input type="number" step="0.01" v-model="form.hours" class="w-full rounded-md border-slate-300 shadow-sm bg-slate-50 text-slate-500 font-bold" readonly>
+                        <div v-if="form.errors.hours" class="text-red-500 text-xs mt-1">{{ form.errors.hours }}</div>
+                    </div> -->
+
+                    
                 </div>
 
                 <div class="bg-slate-50 px-6 py-4 border-t flex justify-end space-x-3 mt-auto">
