@@ -127,4 +127,13 @@ class InvoiceController extends Controller
 
         return $pdf->download('Invoice-' . $invoice->invoice_number . '.pdf');
     }
+
+    public function destroy(Invoice $invoice)
+    {
+        $this->authorize('delete', $invoice);
+    
+        $invoice->delete();
+
+        return back()->with('success', 'Invoice deleted successfully.');
+    }
 }
