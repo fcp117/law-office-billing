@@ -200,9 +200,6 @@ const deleteMatter = () => {
                                 <button @click="openMatterModal" class="text-sm bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-semibold transition">
                                     Edit Matter Details
                                 </button>
-                                <button @click="deleteMatter" class="text-sm bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-semibold transition border border-red-700">
-                                    Delete Matter
-                                </button>
                             </div>
                         </div>
 
