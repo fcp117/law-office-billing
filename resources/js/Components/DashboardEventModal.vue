@@ -15,6 +15,7 @@ const form = useForm({
     title: '',
     description: '',
     scheduled_at: '',
+    status: 'Scheduled',
 });
 
 const formatDateTime = (dateString) => {
@@ -29,6 +30,7 @@ watch(() => props.event, (newEvent) => {
         form.title = newEvent.title || '';
         form.description = newEvent.description || '';
         form.scheduled_at = formatDateTime(newEvent.scheduled_at);
+        form.status = newEvent.status || 'Scheduled';
     } else {
         form.reset();
     }
@@ -97,6 +99,14 @@ const closeModal = () => {
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Date & Time *</label>
                         <input type="datetime-local" v-model="form.scheduled_at" class="w-full rounded-md border-slate-300 shadow-sm" required>
                         <div v-if="form.errors.scheduled_at" class="text-red-500 text-xs mt-1">{{ form.errors.scheduled_at }}</div>
+                    </div>
+                    <div v-if="event">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Status</label>
+                        <select v-model="form.status" class="w-full rounded-md border-slate-300 shadow-sm">
+                            <option value="Scheduled">Scheduled</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                        <div v-if="form.errors.status" class="text-red-500 text-xs mt-1">{{ form.errors.status }}</div>
                     </div>
                 </div>
 

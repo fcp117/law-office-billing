@@ -4,7 +4,7 @@ import { watch } from 'vue';
 
 const props = defineProps({
     show: Boolean,
-    clientId: [Number, String], // We need the client ID to link the matter
+    clientId: [Number, String],
 });
 
 const emit = defineEmits(['close']);
@@ -13,10 +13,11 @@ const form = useForm({
     client_id: props.clientId,
     name: '',
     authority: '',
-    status: 'Active', // Default status
+    status: 'Active',
+    billing_type: 'hourly',
+    fixed_fee_amount: '',
 });
 
-// Update the form's client_id if the prop changes
 watch(() => props.clientId, (newId) => {
     form.client_id = newId;
 });
@@ -40,7 +41,6 @@ const closeModal = () => {
 
 <template>
     <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 bg-opacity-50 backdrop-blur-sm transition-opacity">
-        
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
             
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
@@ -54,7 +54,8 @@ const closeModal = () => {
 
             <div class="p-6 overflow-y-auto">
                 <form @submit.prevent="submit" id="create-matter-form" class="space-y-4">
-                    
+                    <div v-if="form.errors.client_id" class="text-red-500 text-xs mb-2">{{ form.errors.client_id }}</div>
+
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Matter / Case Title *</label>
                         <input type="text" v-model="form.name" placeholder="e.g. Smith vs. Jones" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" required>
@@ -64,6 +65,23 @@ const closeModal = () => {
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Authority / Court</label>
                         <input type="text" v-model="form.authority" placeholder="e.g. Quezon City RTC Br. 22" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                        <div v-if="form.errors.authority" class="text-red-500 text-xs mt-1">{{ form.errors.authority }}</div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Billing Type</label>
+                        <select v-model="form.billing_type" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                            <option value="hourly">Hourly</option>
+                            <option value="fixed_rate">Fixed Rate</option>
+                            <option value="administrative">Administrative (Internal)</option>
+                        </select>
+                        <div v-if="form.errors.billing_type" class="text-red-500 text-xs mt-1">{{ form.errors.billing_type }}</div>
+                    </div>
+
+                    <div v-if="form.billing_type === 'fixed_rate'">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Fixed Fee Amount *</label>
+                        <input type="number" step="0.01" v-model="form.fixed_fee_amount" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                        <div v-if="form.errors.fixed_fee_amount" class="text-red-500 text-xs mt-1">{{ form.errors.fixed_fee_amount }}</div>
                     </div>
 
                     <div>
@@ -73,8 +91,8 @@ const closeModal = () => {
                             <option value="Pending">Pending</option>
                             <option value="On Hold">On Hold</option>
                         </select>
+                        <div v-if="form.errors.status" class="text-red-500 text-xs mt-1">{{ form.errors.status }}</div>
                     </div>
-
                 </form>
             </div>
 

@@ -15,6 +15,7 @@ class TaskSeeder extends Seeder
         foreach ($matters as $matter) {
             // Create 2 tasks per matter
             for ($i = 1; $i <= 2; $i++) {
+            
                 $task = Task::create([
                     'matter_id' => $matter->id,
                     'title' => fake()->randomElement(['Draft Pleading', 'Review Evidence', 'File Motion', 'Send Demand Letter']),

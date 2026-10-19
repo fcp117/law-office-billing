@@ -32,6 +32,12 @@ return new class extends Migration
             $table->date('start_date')->nullable();
             $table->date('closing_date')->nullable();
             $table->text('remarks')->nullable();
+
+            // Billing Structure
+            $table->string('billing_type')->default('hourly'); // 'hourly', 'fixed_rate', 'administrative'
+            $table->decimal('contingency_percentage', 5, 2)->nullable(); // e.g., 30.00
+            $table->decimal('settlement_judgment', 15, 2)->nullable();
+            $table->decimal('fixed_fee_amount', 15, 2)->nullable();
             
             // Audit Trail
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();

@@ -11,6 +11,8 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\TimeEntryController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\AdminController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -45,7 +47,13 @@ Route::get('/matter-list', [MatterListController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('matter-list');
 
-Route::post('/matters', [MatterController::class, 'store'])->name('matters.store');
+//Route::post('/matters', [MatterController::class, 'store'])->name('matters.store');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/matters', [MatterController::class, 'store'])->name('matters.store');
+    Route::put('/matters/{matter}', [MatterController::class, 'update'])->name('matters.update');
+    Route::delete('/matters/{matter}', [MatterController::class, 'destroy'])->name('matters.destroy');
+});
 
 Route::get('/client-list', [ClientListController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -84,6 +92,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+Route::post('/matters/{matter}/invoices', [InvoiceController::class, 'store'])->name('invoices.store');
+Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+
+Route::get('/invoices/{invoice}/download', [InvoiceController::class, 'downloadPdf'])->name('invoices.download');
+Route::get('/invoices/{invoice}/ledes', [InvoiceController::class, 'downloadLedes'])->name('invoices.ledes');
+
+Route::get('/matters/{matter}/statement', [MatterController::class, 'statement'])->name('matters.statement');
+Route::get('/matters/{matter}/statement/download', [MatterController::class, 'downloadStatementPdf'])->name('matters.statement.download');
+
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
+    Route::post('/admin/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
+    Route::post('/admin/assign', [AdminController::class, 'assignUser'])->name('admin.assign');
 });
 
 require __DIR__.'/auth.php';

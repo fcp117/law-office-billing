@@ -12,13 +12,12 @@ class TaskController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'deadline' => 'required|date',
             'status' => 'required|string|in:Pending,Completed',
         ]);
 
-        // Automatically attaches this new task to the correct matter
         $matter->tasks()->create($validated);
-
         return redirect()->back();
     }
 
@@ -26,12 +25,12 @@ class TaskController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'deadline' => 'required|date',
             'status' => 'required|string|in:Pending,Completed',
         ]);
 
         $task->update($validated);
-
         return redirect()->back();
     }
 

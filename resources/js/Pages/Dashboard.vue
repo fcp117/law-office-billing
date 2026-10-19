@@ -56,6 +56,14 @@ const openTimeEntryModal = (entry = null) => {
     selectedTimeEntry.value = entry;
     isTimeEntryModalOpen.value = true;
 };
+
+// PHP-style currency formatting with the Philippine Peso symbol
+const formatCurrency = (amount) => {
+    return '₱' + Number(amount || 0).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+};
 </script>
 
 <template>
@@ -79,7 +87,7 @@ const openTimeEntryModal = (entry = null) => {
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
                 
-                <div v-if="$page.props.auth.user.role === 'Partner'" 
+                <div v-if="$page.props.auth.user?.role === 'Partner'" 
                     class="bg-blue-50 border border-blue-200 rounded-lg p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center">
                     
                     <div class="mb-4 sm:mb-0">
@@ -105,11 +113,11 @@ const openTimeEntryModal = (entry = null) => {
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow border-b-4 border-green-500">
                         <h3 class="text-gray-500 text-sm font-semibold">Billed Amount</h3>
-                        <p class="text-3xl font-bold text-gray-900">Php {{ kpis.billed.toLocaleString() }}</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ formatCurrency(kpis.billed) }}</p>
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow border-b-4 border-blue-500">
                         <h3 class="text-gray-500 text-sm font-semibold">Unbilled Amount</h3>
-                        <p class="text-3xl font-bold text-gray-900">Php {{ kpis.unbilled.toLocaleString() }}</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ formatCurrency(kpis.unbilled) }}</p>
                     </div>
                     
                 </div>

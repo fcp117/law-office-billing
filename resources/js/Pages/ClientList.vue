@@ -78,7 +78,8 @@ const deleteClient = (client) => {
                                     <td class="p-3 text-slate-600">{{client.contact_person_email}}</td>
                                     <td class="p-3 text-slate-600">Php {{ parseFloat(client.retainer_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}}</td>
                                     <td class="p-3 text-slate-600">{{client.partner_in_charge}}</td>
-                                    <td class="p-3 text-right">
+                                    <td class="flex space-x-3 mt-2 text-xs">
+                                        <div class="flex space-x-3 mt-2 text-xs">
                                             <button @click="openEditModal(client)" class="text-green-500 hover:underline text-sm">
                                                 Edit
                                             </button>
@@ -86,6 +87,7 @@ const deleteClient = (client) => {
                                             <button @click="deleteClient(client)" class="text-red-500 hover:underline text-sm">
                                                 Delete
                                             </button>
+                                        </div>
                                     </td>
                                 </tr>
                             

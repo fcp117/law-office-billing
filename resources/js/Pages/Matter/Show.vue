@@ -6,11 +6,12 @@ import { ref } from 'vue';
 // Import our Modals
 import TaskModal from '@/Components/TaskModal.vue';
 import EventModal from '@/Components/EventModal.vue';
-
 import TimeEntryModal from '@/Components/TimeEntryModal.vue';
+import DashboardMatterModal from '@/Components/DashboardMatterModal.vue';
 
 const props = defineProps({
-    matter: Object
+    matter: Object,
+    clients: Array
     });
 
 // ==========================================
@@ -93,6 +94,48 @@ const deleteEvent = (event) => {
         router.delete(route('events.destroy', event.id), { preserveScroll: true });
     }
 };
+
+// Add this near your other logic blocks in <script setup>
+
+// ==========================================
+// 4. GENERATE INVOICE LOGIC
+// ==========================================
+const generateInvoice = () => {
+    if (confirm('Generate an invoice for all unbilled time entries?')) {
+        const today = new Date();
+        const dueDate = new Date();
+        dueDate.setDate(today.getDate() + 30); // Set due date to Net 30
+
+        router.post(route('invoices.store', props.matter.id), {
+            issue_date: today.toISOString().split('T')[0],
+            due_date: dueDate.toISOString().split('T')[0],
+            remarks: 'Thank you for your business.' // Default remark
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                // Optional: You can add a toast notification here
+                console.log('Invoice generated successfully.');
+            }
+        });
+    }
+};
+
+// ==========================================
+// 5. CREATE AND EDIT MATTERS
+// ==========================================
+
+// Setup Modal State and Actions
+const isMatterModalOpen = ref(false);
+
+const openMatterModal = () => {
+    isMatterModalOpen.value = true;
+};
+
+const deleteMatter = () => {
+    if (confirm(`Are you sure you want to completely delete "${props.matter.name}"? This action will permanently wipe all associated tasks, events, and time entries.`)) {
+        router.delete(route('matters.destroy', props.matter.id));
+    }
+};
 </script>
 
 <template>
@@ -124,14 +167,52 @@ const deleteEvent = (event) => {
                         <div class="bg-gray-800 text-white p-6 rounded-lg shadow">
                             <h1 class="text-3xl font-bold">{{ matter.name }}</h1>
                             <p class="mt-2 text-gray-300">Client: {{ matter.client.name }} | Authority: {{ matter.authority }}</p>
+
+                            <!-- Billing Information Summary -->
+                            <div class="mt-4 p-3 bg-slate-700/50 rounded border border-slate-600 inline-block text-sm">
+                                <span class="text-gray-400">Billing Type:</span> 
+                                <span class="text-white font-medium capitalize ml-1 mr-4">
+                                    {{ matter.billing_type ? matter.billing_type.replace('_', ' ') : 'N/A' }}
+                                </span>
+
+                                <template v-if="matter.billing_type === 'fixed_rate'">
+                                    <span class="text-gray-400 border-l border-slate-500 pl-4">Fixed Fee:</span>
+                                    <span class="text-white font-medium ml-1">
+                                        Php {{ parseFloat(matter.fixed_fee_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                                    </span>
+                                </template>
+
+                                <template v-if="matter.billing_type === 'contingency'">
+                                    <span class="text-gray-400 border-l border-slate-500 pl-4">Contingency Rate:</span>
+                                    <span class="text-white font-medium ml-1 mr-4">
+                                        {{ matter.contingency_percentage || 0 }}%
+                                    </span>
+                                    
+                                    <span class="text-gray-400 border-l border-slate-500 pl-4">Settlement / Judgment:</span>
+                                    <span class="text-white font-medium ml-1">
+                                        Php {{ parseFloat(matter.settlement_judgment || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                                    </span>
+                                </template>
+                            </div>
+
+                            <!-- Edit & Delete Buttons -->
+                            <div class="mt-4 space-x-3">
+                                <button @click="openMatterModal" class="text-sm bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-semibold transition">
+                                    Edit Matter Details
+                                </button>
+                                <button @click="deleteMatter" class="text-sm bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-semibold transition border border-red-700">
+                                    Delete Matter
+                                </button>
+                            </div>
                         </div>
+
                         <span class="px-3 py-1 bg-green-500 text-white text-sm font-bold rounded-full">
                             {{ matter.status }}
                         </span>
                     </div>
 
                     <!-- Handling Lawyers now inside the Summary Card -->
-                    <div class="border-t border-slate-700 pt-4">
+                    <div class="border-t border-slate-700 pt-4 mt-4">
                         <h3 class="text-sm font-semibold text-gray-400 uppercase mb-2">Handling Lawyers</h3>
                         <div class="flex flex-wrap gap-4">
                             <div v-for="user in matter.users" :key="user.id" class="text-sm">
@@ -152,7 +233,7 @@ const deleteEvent = (event) => {
                     <div class="bg-white p-6 rounded-lg shadow">
                         <div class="flex justify-between items-center mb-4 border-b pb-2">
                             <h2 class="text-xl font-bold mb-4 border-b pb-2">Tasks</h2>
-                            <button @click="openTaskModal()" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200">
+                            <button v-if="matter.status !== 'Completed'" @click="openTaskModal()" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200">
                                     + Add Task
                             </button>
                         </div>
@@ -191,7 +272,7 @@ const deleteEvent = (event) => {
                     <div class="bg-white p-6 rounded-lg shadow">
                         <div class="flex justify-between items-center mb-4 border-b pb-2">
                             <h2 class="text-xl font-bold mb-4 border-b pb-2">Events</h2>
-                            <button @click="openEventModal()" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200">
+                            <button v-if="matter.status !== 'Completed'" @click="openEventModal()" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200">
                                     + Add Event
                             </button>
                         </div>
@@ -203,6 +284,7 @@ const deleteEvent = (event) => {
                                     <th class="p-3">Scheduled For</th>
                                     <th class="p-3">Location</th>
                                     <th class="p-3">Actions</th>
+                                    <th class="p-3">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -215,6 +297,12 @@ const deleteEvent = (event) => {
                                             <button @click="openEventModal(event)" class="text-green-500 text-sm hover:bg-green-600 font-medium py-1 px-3 rounded">Edit</button>
                                             <button @click="deleteEvent(event)" class="text-red-500 text-sm hover:bg-red-600 font-medium py-1 px-3 rounded">Delete</button>
                                         </div>
+                                    </td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-1 text-xs rounded-full" 
+                                            :class="event.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'">
+                                            {{ event.status }}
+                                        </span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -230,11 +318,13 @@ const deleteEvent = (event) => {
                         <div class="flex justify-between items-center border-b pb-2 mb-4">
                             <h2 class="text-xl font-bold">Time Entries (Running Billable)</h2>
                             <div class="space-x-3">
-                                <button @click="openTimeEntryModal()" class="bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded text-sm font-semibold hover:bg-purple-200 transition">
+                                <button v-if="matter.status !== 'Completed'"
+                                        @click="openTimeEntryModal()" 
+                                        class="bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded text-sm font-semibold hover:bg-purple-200 transition">
                                     + Log Hours
                                 </button>
                             </div>
-                            <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-blue-700 transition">
+                            <button @click="generateInvoice" class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-blue-700 transition">
                                 Generate Invoice
                             </button>
                         </div>
@@ -279,7 +369,11 @@ const deleteEvent = (event) => {
                             </thead>
                             <tbody>
                                 <tr v-for="invoice in matter.invoices" :key="invoice.id" class="border-b">
-                                    <td class="p-3 font-medium text-slate-800">{{ invoice.invoice_number }}</td>
+                                    <td class="p-3 font-medium">
+                                        <Link :href="route('invoices.show', invoice.id)" class="text-blue-600 hover:text-blue-800 hover:underline">
+                                            {{ invoice.invoice_number }}
+                                        </Link>
+                                    </td>
                                     <td class="p-3 text-slate-600">{{ new Date(invoice.issue_date).toLocaleDateString() }}</td>
                                     <td class="p-3">
                                         <!-- Dynamic Status Badges -->
@@ -318,6 +412,19 @@ const deleteEvent = (event) => {
                             </tbody>
                         </table>
                         <p v-else class="text-slate-500 italic">No invoices have been generated for this matter yet.</p>
+                    </div>
+
+                     <!-- Add this card into your summary grid -->
+                    <div class="bg-white p-6 rounded-lg shadow border-b-4 border-amber-500">
+                        <h3 class="text-gray-500 text-sm font-semibold">Total Unpaid Amount</h3>
+                        <p class="text-3xl font-bold text-gray-900 mt-1">
+                            Php {{ parseFloat(matter.total_unpaid_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                        </p>
+                        <div class="mt-4">
+                            <Link :href="route('matters.statement', matter.id)" class="text-xs bg-amber-50 text-amber-700 px-3 py-1.5 rounded font-semibold border border-amber-200 hover:bg-amber-100 transition">
+                                View Statement of Account
+                            </Link>
+                        </div>
                     </div>
                 </div>
     </AuthenticatedLayout>
@@ -397,7 +504,16 @@ const deleteEvent = (event) => {
             :show="isTimeEntryModalOpen" 
             :matter-id="matter.id"
             :time-entry="selectedTimeEntry"
+            :tasks="matter.tasks"   
+            :events="matter.events"
             @close="isTimeEntryModalOpen = false" 
+        />
+
+        <DashboardMatterModal 
+            :show="isMatterModalOpen" 
+            :clients="clients"
+            :matter="matter"
+            @close="isMatterModalOpen = false" 
         />
 
 </template>

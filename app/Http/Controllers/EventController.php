@@ -12,13 +12,12 @@ class EventController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'scheduled_at' => 'required|date',
+            'status' => 'required|string|in:Scheduled,Completed',
         ]);
 
-       // $validated['user_id'] = auth()->id();
-
         $matter->events()->create($validated);
-
         return redirect()->back();
     }
 
@@ -26,11 +25,12 @@ class EventController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'scheduled_at' => 'required|date',
+            'status' => 'required|string|in:Scheduled,Completed',
         ]);
 
         $event->update($validated);
-
         return redirect()->back();
     }
 

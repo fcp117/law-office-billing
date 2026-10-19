@@ -16,6 +16,7 @@ class EventSeeder extends Seeder
         foreach ($matters as $matter) {
             // Create 2 events per matter
             for ($i = 1; $i <= 2; $i++) {
+            
                 $event = Event::create([
                     'matter_id' => $matter->id,
                     'title' => fake()->randomElement(['Court Hearing', 'Client Meeting', 'Mediation', 'Deposition']),
