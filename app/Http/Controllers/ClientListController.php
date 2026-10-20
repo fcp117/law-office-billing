@@ -15,6 +15,6 @@ class ClientListController extends Controller
 
     //dd ($client);
 
-    return Inertia::render('ClientList', ['clients' => $client]);
+    return Inertia::render('Clients', ['clients' => $client]);
     }
 }

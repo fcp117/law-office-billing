@@ -76,11 +76,6 @@ const formatCurrency = (amount) => {
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                     My Workspace
                 </h2>
-                
-                <Link :href="route('client-list')" 
-                      class="text-blue-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition shadow-sm">
-                    Manage Clients
-                </Link>
             </div>
         </template>
 

@@ -43,9 +43,9 @@ Route::get('/matters/{id}', [MatterController::class, 'show'])
     ->middleware(['auth', 'verified'])
     ->name('matters.show');
 
-Route::get('/matter-list', [MatterListController::class, 'index'])
+Route::get('/matters', [MatterListController::class, 'index'])
     ->middleware(['auth', 'verified'])
-    ->name('matter-list');
+    ->name('matters');
 
 //Route::post('/matters', [MatterController::class, 'store'])->name('matters.store');
 
@@ -58,9 +58,9 @@ Route::delete('/matters/{matter}', [MatterController::class, 'destroy'])
     ->middleware(['auth', 'verified', 'partner'])
     ->name('matters.destroy');
 
-Route::get('/client-list', [ClientListController::class, 'index'])
+Route::get('/clients', [ClientListController::class, 'index'])
     ->middleware(['auth', 'verified'])
-    ->name('client-list');
+    ->name('clients');
 
 Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
 

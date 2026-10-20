@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
+import DashboardMatterModal from '@/Components/DashboardMatterModal.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
 const props = defineProps({
@@ -9,6 +10,8 @@ const props = defineProps({
 
 // Reactive state for the search input
 const searchQuery = ref('');
+
+const isMatterModalOpen = ref(false);
 
 // Computed property to filter matters based on the search query
 const filteredMatters = computed(() => {
@@ -26,6 +29,22 @@ const filteredMatters = computed(() => {
     <Head title="OCBOCC Case Information Management System" />
 
     <AuthenticatedLayout>
+
+        <template #header>
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <h2 class="font-semibold text-xl text-gray-800 leading-tight">Matters</h2>
+                    <Link :href="route('dashboard')" class="text-sm text-gray-500 hover:text-blue-600 transition">
+                         Back to Dashboard
+                    </Link>
+                </div>
+                <button @click="isMatterModalOpen = true" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm">
+                                    + Add Matter
+                </button>
+            </div>
+        </template>
+
         <div class="py-8">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 
@@ -86,5 +105,12 @@ const filteredMatters = computed(() => {
                 </div>
             </div>
         </div>
+
+        <DashboardMatterModal 
+            :show="isMatterModalOpen" 
+            :clients="clients"
+            @close="isMatterModalOpen = false" 
+        />
+
     </AuthenticatedLayout>
 </template>

@@ -12,6 +12,6 @@ class MatterListController extends Controller
     {
     $matter = Matter::with(['client'])->orderBy('client_id', 'asc')->get();
 
-    return Inertia::render('MatterList', ['matters' => $matter]);
+    return Inertia::render('Matters', ['matters' => $matter]);
     }
 }

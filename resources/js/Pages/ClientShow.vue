@@ -22,22 +22,9 @@ const isCreateMatterModalOpen = ref(false);
         
         <template #header>
             <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-4">
-                    <Link :href="route('dashboard')" class="text-gray-500 hover:text-blue-600 transition font-medium">
-                        Dashboard
-                    </Link>
-                    <span class="text-gray-400">/</span>
-                    <Link :href="route('client-list')" class="text-gray-500 hover:text-blue-600 transition font-medium">
-                        Clients
-                    </Link>
-                    <span class="text-gray-400">/</span>
-                    <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                        {{ client?.name }}
-                    </h2>
-                    <!-- <Link :href="route('client-list')" class="text-sm text-gray-500 hover:text-blue-600 transition">
-                        &larr; Back to Clients List
-                    </Link> -->
-                </div>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    Clients
+                </h2>
             </div>
         </template>
 
