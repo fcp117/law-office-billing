@@ -1,67 +1,84 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
-import { watch } from 'vue';
+import { watch, computed, ref } from 'vue';
 
 const props = defineProps({
     show: Boolean,
     timeEntry: Object, 
-    matters: Array, // Remove this line if updating TimeEntryModal.vue
+    matters: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(['close']);
 
+const showQuickCreate = ref(false);
+const newBillableType = ref('App\\Models\\Task');
+const newBillableTitle = ref('');
+
 const form = useForm({
-    matter_id: '', // Remove this line if updating TimeEntryModal.vue
+    matter_id: '',
     start_time: '',
-    end_time: '',
     hours: '',
     description: '',
+    billable_selection: '',
+    billable_id: null,
+    billable_type: null,
 });
 
-// Helper to format dates for datetime-local inputs
-const formatDateTime = (dateString) => {
-    if (!dateString) return '';
-    const d = new Date(dateString);
-    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-};
+// 1. Get tasks and events for the selected matter
+const selectedMatter = computed(() => {
+    return props.matters.find(m => m.id === form.matter_id);
+});
 
-// 1. Watch for modal open/close to fill data
+const billableOptions = computed(() => {
+    if (!selectedMatter.value) return [];
+    
+    const options = [];
+    (selectedMatter.value.tasks || []).forEach(task => {
+        options.push({ id: task.id, type: 'App\\Models\\Task', label: `[Task] ${task.title}` });
+    });
+    (selectedMatter.value.events || []).forEach(event => {
+        options.push({ id: event.id, type: 'App\\Models\\Event', label: `[Event] ${event.title}` });
+    });
+    return options;
+});
+
+// Reset billable_selection when matter changes
+watch(() => form.matter_id, () => {
+    if (!props.timeEntry) {
+        form.billable_selection = '';
+    }
+});
+
 watch(() => props.timeEntry, (newEntry) => {
     if (newEntry) {
-        form.matter_id = newEntry.matter_id || (newEntry.matter?.id) || ''; // Remove if TimeEntryModal
-        form.start_time = formatDateTime(newEntry.start_time);
-        form.end_time = formatDateTime(newEntry.end_time);
+        form.matter_id = newEntry.matter_id || (newEntry.matter?.id) || '';
+        form.start_time = newEntry.start_time ? newEntry.start_time.slice(0, 10) : '';
         form.hours = newEntry.hours || '';
         form.description = newEntry.description || '';
+        if (newEntry.billable_id && newEntry.billable_type) {
+            form.billable_selection = `${newEntry.billable_type}|${newEntry.billable_id}`;
+        }
     } else {
         form.reset();
     }
 }, { immediate: true });
 
-// 2. SMART FEATURE: Auto-calculate hours when times change
-watch([() => form.start_time, () => form.end_time], ([start, end]) => {
-    if (start && end) {
-        const startDate = new Date(start);
-        const endDate = new Date(end);
-        const diffMs = endDate - startDate;
-        
-        if (diffMs > 0) {
-            // Convert milliseconds to hours and round to 2 decimals
-            form.hours = (diffMs / (1000 * 60 * 60)).toFixed(2);
-        } else {
-            form.hours = 0;
-        }
-    }
-});
-
 const submit = () => {
+    if (form.billable_selection) {
+        const [type, id] = form.billable_selection.split('|');
+        form.billable_type = type;
+        form.billable_id = id;
+    } else {
+        form.billable_type = null;
+        form.billable_id = null;
+    }
+
     if (props.timeEntry) {
         form.put(route('time-entries.update', props.timeEntry.id), {
             preserveScroll: true,
             onSuccess: () => emit('close'),
         });
     } else {
-        // Change `form.matter_id` to `props.matterId` if updating TimeEntryModal.vue
         form.post(route('matters.time-entries.store', form.matter_id), { 
             preserveScroll: true,
             onSuccess: () => {
@@ -75,6 +92,7 @@ const submit = () => {
 const closeModal = () => {
     form.reset();
     form.clearErrors();
+    showQuickCreate.value = false;
     emit('close');
 };
 </script>
@@ -93,7 +111,7 @@ const closeModal = () => {
 
             <form @submit.prevent="submit">
                 <div class="p-6 space-y-4">
-                    
+                    <!-- MATTER SELECTOR -->
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Assign to Matter *</label>
                         <select v-model="form.matter_id" class="w-full rounded-md border-slate-300 shadow-sm" required :disabled="timeEntry">
@@ -104,25 +122,37 @@ const closeModal = () => {
                         </select>
                         <div v-if="form.errors.matter_id" class="text-red-500 text-xs mt-1">{{ form.errors.matter_id }}</div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Start Time *</label>
-                            <input type="datetime-local" v-model="form.start_time" class="w-full rounded-md border-slate-300 shadow-sm" required>
-                            <div v-if="form.errors.start_time" class="text-red-500 text-xs mt-1">{{ form.errors.start_time }}</div>
+
+                    <!-- TASK / EVENT DROPDOWN -->
+                    <div v-if="form.matter_id">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-sm font-semibold text-slate-700">Link to Task or Event</label>
                         </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">End Time *</label>
-                            <input type="datetime-local" v-model="form.end_time" class="w-full rounded-md border-slate-300 shadow-sm" required>
-                            <div v-if="form.errors.end_time" class="text-red-500 text-xs mt-1">{{ form.errors.end_time }}</div>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Total Hours</label>
-                        <input type="number" step="0.01" v-model="form.hours" class="w-full rounded-md border-slate-300 shadow-sm bg-slate-50 text-slate-500 font-bold" readonly>
-                        <p class="text-xs text-slate-400 mt-1">Calculated automatically.</p>
+
+                        <select v-model="form.billable_selection" class="w-full rounded-md border-slate-300 shadow-sm bg-white">
+                            <option value="">None (General Matter Time)</option>
+                            <option v-for="option in billableOptions" :key="option.type + option.id" :value="`${option.type}|${option.id}`">
+                                {{ option.label }}
+                            </option>
+                        </select>
                     </div>
 
+                    <!-- DATE AND HOURS -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Date *</label>
+                            <input type="date" v-model="form.start_time" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                            <div v-if="form.errors.start_time" class="text-red-500 text-xs mt-1">{{ form.errors.start_time }}</div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Hours *</label>
+                            <input type="number" step="0.25" v-model="form.hours" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                            <div v-if="form.errors.hours" class="text-red-500 text-xs mt-1">{{ form.errors.hours }}</div>
+                        </div>
+                    </div>
+
+                    <!-- WORK DESCRIPTION -->
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Work Description *</label>
                         <textarea v-model="form.description" rows="3" placeholder="Briefly describe the work done..." class="w-full rounded-md border-slate-300 shadow-sm" required></textarea>

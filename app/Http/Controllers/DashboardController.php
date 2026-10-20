@@ -63,7 +63,7 @@ class DashboardController extends Controller
 
         // 3. Fetch Active Matters
         $matters = $user->matters()
-            ->with('client:id,name')
+            ->with(['client:id,name', 'tasks', 'events'])
             ->where('status', 'Active')
             ->orderBy('created_at', 'desc')
             ->get();
