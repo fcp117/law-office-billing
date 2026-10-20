@@ -31,6 +31,18 @@
 </head>
 <body>
 
+    @php
+        // Determine Billing Type Flags
+        $billingType = strtolower($invoice->matter->billing_type ?? 'hourly');
+        $isHourly = $billingType === 'hourly';
+        $isFixedRate = $billingType === 'fixed_rate';
+        $isContingency = $billingType === 'contingency';
+        
+        // Totals Calculations
+        $ourFees = $invoice->total_amount / 1.12;
+        $vat = $ourFees * 0.12;
+    @endphp
+
     <!-- Firm Letterhead & Invoice Header -->
     <table class="header-table">
         <tr>
@@ -73,6 +85,36 @@
         </table>
     </div>
 
+    <!-- Billing Terms Summary (For Fixed Rate & Contingency) -->
+    @if($isFixedRate || $isContingency)
+        <div class="box">
+            <h4 style="margin-top: 0; margin-bottom: 5px; text-transform: uppercase; font-size: 11px; color: #475569;">Billing Terms</h4>
+            <table class="details-table">
+                @if($isFixedRate)
+                    <tr>
+                        <td class="bold" style="width: 20%;">BILLING TYPE:</td>
+                        <td style="width: 30%;">Fixed Rate</td>
+                        <td class="bold" style="width: 20%;">FIXED FEE AMOUNT:</td>
+                        <td style="width: 30%;">&#8369;{{ number_format($invoice->matter->fixed_fee_amount, 2) }}</td>
+                    </tr>
+                @endif
+                
+                @if($isContingency)
+                    <tr>
+                        <td class="bold" style="width: 20%;">BILLING TYPE:</td>
+                        <td style="width: 30%;">Contingency</td>
+                        <td class="bold" style="width: 20%;">CONTINGENCY RATE:</td>
+                        <td style="width: 30%;">{{ $invoice->matter->contingency_percentage }}%</td>
+                    </tr>
+                    <tr>
+                        <td class="bold">SETTLEMENT / JUDGMENT:</td>
+                        <td colspan="3">&#8369;{{ number_format($invoice->matter->settlement_judgment, 2) }}</td>
+                    </tr>
+                @endif
+            </table>
+        </div>
+    @endif
+
     <!-- Professional Services Itemized Breakdown -->
     <h4 style="margin-top: 30px; margin-bottom: 5px; text-transform: uppercase; font-size: 11px; color: #475569;">Professional Services Rendered</h4>
     <table class="items-table">
@@ -80,10 +122,12 @@
             <tr>
                 <th style="width: 12%;">Date</th>
                 <th style="width: 15%;">Timekeeper</th>
-                <th style="width: 43%;">Description of Services</th>
+                <th style="width: {{ $isHourly ? '43%' : '63%' }};">Description of Services</th>
                 <th class="text-center" style="width: 10%;">Hours</th>
-                <th class="text-right" style="width: 10%;">Rate</th>
-                <th class="text-right" style="width: 10%;">Amount</th>
+                @if($isHourly)
+                    <th class="text-right" style="width: 10%;">Rate</th>
+                    <th class="text-right" style="width: 10%;">Amount</th>
+                @endif
             </tr>
         </thead>
         <tbody>
@@ -93,19 +137,16 @@
                     <td class="bold">{{ $entry->user->name ?? 'Lawyer' }}</td>
                     <td>{{ $entry->description }}</td>
                     <td class="text-center">{{ number_format($entry->hours, 2) }}</td>
-                    <td class="text-right">&#8369;{{ number_format($entry->hourly_rate, 2) }}</td>
-                    <td class="text-right bold">&#8369;{{ number_format($entry->amount, 2) }}</td>
+                    @if($isHourly)
+                        <td class="text-right">&#8369;{{ number_format($entry->hourly_rate, 2) }}</td>
+                        <td class="text-right bold">&#8369;{{ number_format($entry->amount, 2) }}</td>
+                    @endif
                 </tr>
             @endforeach
         </tbody>
     </table>
 
     <!-- Totals Calculations -->
-
-    @php
-    $ourFees = $invoice->total_amount / 1.12;
-    $vat = $ourFees * 0.12;
-    @endphp
     <div class="totals-section">
         <table class="totals-table">
             <tr>
@@ -114,7 +155,7 @@
             </tr>
             <tr>
                 <td><strong>+ 12% VAT:</strong></td>
-                <td class="text-right">&#8369;{{number_format($vat, 2)}}</td>
+                <td class="text-right">&#8369;{{ number_format($vat, 2) }}</td>
             </tr>
             <tr style="background-color: #f1f5f9;">
                 <td><strong>Total:</strong></td>
