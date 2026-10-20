@@ -166,28 +166,6 @@ const navigation = [
                         </Link>
                         </template>
                     </nav>
-
-                    <div class="border-t border-gray-100 p-3">
-                        <div class="mb-2 px-3">
-                            <div class="truncate text-sm font-semibold text-gray-800">
-                                {{ $page.props.auth.user?.name || 'Guest' }}
-                            </div>
-                            <div class="truncate text-xs text-gray-500">
-                                {{ $page.props.auth.user?.email || '' }}
-                            </div>
-                        </div>
-                        <Link :href="route('profile.edit')" @click="showingNavigationDropdown = false" class="block rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-50">
-                            Profile
-                        </Link>
-                        <Link
-                            :href="route('logout')"
-                            method="post"
-                            as="button"
-                            class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-50"
-                        >
-                            Log Out
-                        </Link>
-                    </div>
                 </aside>
             </div>
 
