@@ -75,6 +75,12 @@ const closeModal = () => {
                         <div v-if="form.errors.email" class="text-red-500 text-xs mt-1">{{ form.errors.email }}</div>
                     </div>
 
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Start Date</label>
+                        <input type="date" v-model="form.start_date" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" required>
+                        <div v-if="form.errors.start_date" class="text-red-500 text-xs mt-1">{{ form.errors.start_date }}</div>
+                    </div>
+
                     <div class="md:col-span-2 border-b pb-2 mb-2 mt-4">
                         <h4 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Contact Person (Optional)</h4>
                     </div>

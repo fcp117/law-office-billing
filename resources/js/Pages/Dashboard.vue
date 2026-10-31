@@ -74,7 +74,7 @@ const formatCurrency = (amount) => {
         <template #header>
             <div class="flex justify-between items-center">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    My Workspace
+                    {{ $page.props.auth.user?.name }}'s Dashboard
                 </h2>
             </div>
         </template>

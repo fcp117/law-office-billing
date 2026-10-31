@@ -66,6 +66,10 @@ const submit = () => {
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Primary Email *</label>
                         <input type="email" v-model="form.email" class="w-full rounded-md border-slate-300" required>
                     </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Start Date</label>
+                        <input type="date" v-model="form.start_date" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" required>
+                    </div>
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Contact Person</label>
                         <input type="text" v-model="form.contact_person" class="w-full rounded-md border-slate-300">

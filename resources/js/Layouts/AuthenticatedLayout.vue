@@ -9,8 +9,8 @@ const showingNavigationDropdown = ref(false);
 
 const navigation = [
     { label: 'Dashboard', route: 'dashboard', active: 'dashboard', icon: 'dashboard' },
-    { label: 'Matters', route: 'matters', active: 'matters*', icon: 'matters' },
     { label: 'Clients', route: 'clients', active: 'clients*', icon: 'clients' },
+    { label: 'Matters', route: 'matters', active: 'matters*', icon: 'matters' },
     { label: 'Lawyers', route: 'lawyers', active: 'lawyers*', icon: 'lawyers' },
     { label: 'Invoices', route: 'invoices', active: 'invoices*', icon: 'invoices' },
 ];
@@ -43,31 +43,31 @@ const navigation = [
 
         <div class="flex min-h-[calc(100vh-4rem)] lg:min-h-screen">
             <!-- Desktop sidebar -->
-            <aside class="hidden w-64 shrink-0 flex-col border-r border-gray-200 bg-white lg:flex">
-                <div class="flex h-20 items-center gap-3 border-b border-gray-100 px-5">
+            <aside class="hidden w-64 shrink-0 flex-col border-r border-gray-800 bg-gray-900 lg:flex">
+                <div class="flex h-20 items-center gap-3 border-b border-gray-800 px-5">
                     <Link :href="route('dashboard')" class="flex items-center gap-3">
-                        <ApplicationLogo class="block h-10 w-auto fill-current text-gray-800" />
-                        <span class="font-semibold leading-tight text-gray-800">OCBOCC<br><span class="text-xs font-medium text-gray-500">Case Management</span></span>
+                        <ApplicationLogo class="block h-10 w-auto fill-current text-gray-200" />
+                        <span class="font-semibold leading-tight text-white">OCBOCC<br><span class="text-large font-medium text-gray-400">Case Management</span></span>
                     </Link>
                 </div>
 
                 <div class="border-t border-gray-100 p-3">
                     <div class="mb-2 px-3">
-                        <div class="truncate text-sm font-semibold text-gray-800">
+                        <div class="truncate text-large font-semibold text-gray-200">
                             {{ $page.props.auth.user?.name || 'Guest' }}
                         </div>
-                        <div class="truncate text-xs text-gray-500">
+                        <div class="truncate text-xs text-gray-200">
                             {{ $page.props.auth.user?.email || '' }}
                         </div>
                     </div>
-                    <Link :href="route('profile.edit')" class="block rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                    <Link :href="route('profile.edit')" class="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-gray-50 hover:text-gray-900">
                         Profile
                     </Link>
                     <Link
                         :href="route('logout')"
                         method="post"
                         as="button"
-                        class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-50 hover:text-gray-900"
                     >
                         Log Out
                     </Link>
@@ -81,7 +81,7 @@ const navigation = [
                         class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition"
                         :class="route().current(item.active)
                             ? 'bg-blue-50 text-blue-700'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+                            : 'text-gray-100 hover:bg-gray-50 hover:text-gray-900'"
                     >
                         <svg v-if="item.icon === 'dashboard'" class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <rect x="3" y="3" width="7" height="7" rx="1" stroke-width="1.8" />
@@ -107,7 +107,7 @@ const navigation = [
                     </template>
                 </nav>
 
-                <div class="border-t border-gray-100 p-3">
+                <!-- <div class="border-t border-gray-100 p-3">
                     <div class="mb-2 px-3">
                         <div class="truncate text-sm font-semibold text-gray-800">
                             {{ $page.props.auth.user?.name || 'Guest' }}
@@ -127,7 +127,7 @@ const navigation = [
                     >
                         Log Out
                     </Link>
-                </div>
+                </div> -->
             </aside>
 
             <!-- Mobile navigation panel -->

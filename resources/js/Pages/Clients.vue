@@ -118,6 +118,10 @@ const deleteClient = (client) => {
                                 {{ client.address || '—' }}
                             </div>
                             <div>
+                                <span class="font-medium text-slate-900 block mb-1">Start Date</span> 
+                                {{ (client.start_date) || '—' }}
+                            </div>
+                            <div>
                                 <span class="font-medium text-slate-900 block mb-1">Partner-in-Charge</span> 
                                 {{ client.partner_in_charge || '—' }}
                             </div>
