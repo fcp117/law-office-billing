@@ -19,6 +19,13 @@ const props = defineProps({
     clients: Array
 });
 
+const formatString = (text) => {
+    if (!text) return '';
+    return text
+        .replace(/_/g, ' ') 
+        .replace(/\b\w/g, (char) => char.toUpperCase()); 
+};
+
 const page = usePage();
 const authUser = computed(() => page.props.auth.user);
 
@@ -111,24 +118,53 @@ const formatCurrency = (amount) => {
                 </div>
 
                 <!-- KPI Section: Visible ONLY to Dashboard Owner or Partner/Admin -->
-                <div v-if="canViewKpis" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-lg shadow flex justify-between items-start">
-                        <div>
-                            <h3 class="text-gray-500 text-sm font-semibold">Billable Hours (This Month)</h3>
-                            <p class="text-3xl font-bold text-gray-900">{{ kpis?.hours || 0 }}</p>
+                <div v-if="canViewKpis" class="space-y-6">
+                    
+                    <!-- Aggregate Totals -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow flex justify-between items-start border-b-4 border-gray-800">
+                            <div>
+                                <h3 class="text-gray-500 text-sm font-semibold">Total Billable Hours (This Month)</h3>
+                                <p class="text-3xl font-bold text-gray-900">{{ kpis?.aggregate?.hours || 0 }}</p>
+                            </div>
+                            <button @click="openTimeEntryModal()" class="bg-purple-100 text-purple-700 px-3 py-1.5 rounded text-sm font-semibold hover:bg-purple-200 transition border border-purple-200">
+                                + Log Time
+                            </button>
                         </div>
-                        <button @click="openTimeEntryModal()" class="bg-purple-100 text-purple-700 px-3 py-1.5 rounded text-sm font-semibold hover:bg-purple-200 transition border border-purple-200">
-                            + Log Time
-                        </button>
+                        <div class="bg-white p-6 rounded-lg shadow border-b-4 border-green-500">
+                            <h3 class="text-gray-500 text-sm font-semibold">Total Billed Amount</h3>
+                            <p class="text-3xl font-bold text-gray-900">{{ formatCurrency(kpis?.aggregate?.billed) }}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow border-b-4 border-blue-500">
+                            <h3 class="text-gray-500 text-sm font-semibold">Total Unbilled Amount</h3>
+                            <p class="text-3xl font-bold text-gray-900">{{ formatCurrency(kpis?.aggregate?.unbilled) }}</p>
+                        </div>
                     </div>
-                    <div class="bg-white p-6 rounded-lg shadow border-b-4 border-green-500">
-                        <h3 class="text-gray-500 text-sm font-semibold">Billed Amount</h3>
-                        <p class="text-3xl font-bold text-gray-900">{{ formatCurrency(kpis?.billed) }}</p>
+
+                    <!-- Breakdown by Billing Type -->
+                    <div v-if="kpis?.by_billing_type && Object.keys(kpis.by_billing_type).length > 0" class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-bold border-b pb-2 mb-4">Breakdown by Billing Type</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div v-for="(data, type) in kpis.by_billing_type" :key="type" class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <h4 class="font-bold text-gray-800 mb-3">{{ formatString(type) }}</h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500 font-medium">Hours</span>
+                                        <span class="font-bold text-gray-900">{{ data.hours }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500 font-medium">Billed</span>
+                                        <span class="font-bold text-green-700">{{ formatCurrency(data.billed) }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500 font-medium">Unbilled</span>
+                                        <span class="font-bold text-blue-700">{{ formatCurrency(data.unbilled) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="bg-white p-6 rounded-lg shadow border-b-4 border-blue-500">
-                        <h3 class="text-gray-500 text-sm font-semibold">Unbilled Amount</h3>
-                        <p class="text-3xl font-bold text-gray-900">{{ formatCurrency(kpis?.unbilled) }}</p>
-                    </div>
+
                 </div>
 
                 <!-- Main Content Grid -->
@@ -179,7 +215,7 @@ const formatCurrency = (amount) => {
                             <div class="max-h-80 overflow-y-auto pr-2">
                                 <ul class="space-y-4" v-if="tasks && tasks.length > 0">
                                     <li v-for="task in tasks" :key="task.id" class="flex items-start space-x-3 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                        <input type="checkbox" class="mt-1 rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500">
+                                        <!-- <input type="checkbox" class="mt-1 rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"> -->
                                         <div class="w-full">
                                             <div class="flex justify-between items-start">
                                                 <div>
@@ -216,9 +252,19 @@ const formatCurrency = (amount) => {
                                     <Link :href="route('matters.show', matter.id)" class="block p-3 rounded hover:bg-gray-50 transition border border-transparent hover:border-gray-200">
                                         <div class="font-semibold text-blue-600">{{ matter.name }}</div>
                                         <div class="font-semibold text-gray-600">{{ matter.client?.name }}</div>
-                                        <div class="text-xs text-gray-500 mt-1 flex justify-between">
+                                        <!-- <div class="text-xs text-gray-500 mt-1 flex justify-between">
                                             <span>{{ matter.authority }}</span>
                                             <span class="text-green-600">{{ matter.status }}</span>
+                                        </div> -->
+                                        <div class="text-xs text-gray-500 mt-2 flex justify-between items-center">
+                                            <div class="flex items-center space-x-2">
+                                                <span>{{ matter.authority }}</span>
+                                                <!-- New Billing Type Badge -->
+                                                <span v-if="matter.billing_type" class="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-medium">
+                                                    {{ formatString(matter.billing_type) }}
+                                                </span>
+                                            </div>
+                                            <span class="text-green-600 font-semibold">{{ matter.status }}</span>
                                         </div>
                                     </Link>
                                 </li>
