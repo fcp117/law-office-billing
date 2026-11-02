@@ -69,7 +69,9 @@ const closeModal = () => {
                     <label class="block text-sm font-semibold text-slate-700 mb-1">Role / Designation *</label>
                     <select v-model="form.role" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" required>
                         <option value="Partner">Partner</option>
-                        <option value="Associate">Associate</option>
+                        <option value="Associate Attorney">Associate Attorney</option>
+                        <option value="Assistant Attorney">Assistant Attorney</option>
+                        <option value="Paralegal">Paralegal</option>
                     </select>
                     <div v-if="form.errors.role" class="text-red-500 text-xs mt-1">{{ form.errors.role }}</div>
                 </div>
