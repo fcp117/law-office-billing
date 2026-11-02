@@ -12,7 +12,8 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\TimeEntryController;
 use App\Http\Controllers\InvoiceController;
-use App\Http\Controllers\AdminController;
+use App\Http\Controllers\LawyerController;
+/* use App\Http\Controllers\AdminController; */
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -26,11 +27,7 @@ Route::get('/', function () {
     ]);
 });
 
-//Route::get('/dashboard', function () {
-//  return Inertia::render('Dashboard');
-//})->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::get('/dashboard', [DashboardController::class, 'index'])
+Route::get('/dashboard/{user?}', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
@@ -47,11 +44,11 @@ Route::get('/matters', [MatterListController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('matters');
 
-//Route::post('/matters', [MatterController::class, 'store'])->name('matters.store');
-
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/matters', [MatterController::class, 'store'])->name('matters.store');
     Route::put('/matters/{matter}', [MatterController::class, 'update'])->name('matters.update');
+    Route::get('/lawyers', [LawyerController::class, 'index'])->name('lawyers');
+    Route::put('/lawyers/{user}', [LawyerController::class, 'update'])->name('lawyers.update');
 });
 
 Route::delete('/matters/{matter}', [MatterController::class, 'destroy'])
@@ -105,11 +102,5 @@ Route::get('/invoices/{invoice}/ledes', [InvoiceController::class, 'downloadLede
 
 Route::get('/matters/{matter}/statement', [MatterController::class, 'statement'])->name('matters.statement');
 Route::get('/matters/{matter}/statement/download', [MatterController::class, 'downloadStatementPdf'])->name('matters.statement.download');
-
-Route::middleware(['auth', 'admin'])->group(function () {
-    Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
-    Route::post('/admin/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
-    Route::post('/admin/assign', [AdminController::class, 'assignUser'])->name('admin.assign');
-});
 
 require __DIR__.'/auth.php';

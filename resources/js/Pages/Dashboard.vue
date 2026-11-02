@@ -1,20 +1,30 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
-// Import our new Dashboard Modals
+// Import Dashboard Modals
 import DashboardTaskModal from '@/Components/DashboardTaskModal.vue';
 import DashboardEventModal from '@/Components/DashboardEventModal.vue';
 import DashboardMatterModal from '@/Components/DashboardMatterModal.vue';
 import DashboardTimeEntryModal from '@/Components/DashboardTimeEntryModal.vue';
+import { usePage } from '@inertiajs/vue3';
 
-defineProps({
+const props = defineProps({
+    targetUser: Object,
     kpis: Object,
     events: Array,
     tasks: Array,
     matters: Array,
     clients: Array
+});
+
+const page = usePage();
+const authUser = computed(() => page.props.auth.user);
+
+// Condition: Visible only to the dashboard owner or to a Partner / Admin
+const canViewKpis = computed(() => {
+    return authUser.value.id === props.targetUser.id || authUser.value.role === 'Partner' || authUser.value.role === 'Admin';
 });
 
 // --- Tasks Logic ---
@@ -57,7 +67,7 @@ const openTimeEntryModal = (entry = null) => {
     isTimeEntryModalOpen.value = true;
 };
 
-// PHP-style currency formatting with the Philippine Peso symbol
+// Currency formatter
 const formatCurrency = (amount) => {
     return '₱' + Number(amount || 0).toLocaleString('en-US', {
         minimumFractionDigits: 2,
@@ -67,22 +77,26 @@ const formatCurrency = (amount) => {
 </script>
 
 <template>
-    <Head title="OCBOCC Case Information Management System" />
+    <Head :title="`${targetUser.name}'s Dashboard`" />
 
     <AuthenticatedLayout>
         
         <template #header>
             <div class="flex justify-between items-center">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    {{ $page.props.auth.user?.name }}'s Dashboard
+                    {{ targetUser.name }}'s Dashboard
                 </h2>
+                <Link :href="route('lawyers')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded font-semibold transition border">
+                    &larr; Back to Lawyers Directory
+                </Link>
             </div>
         </template>
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
                 
-                <div v-if="$page.props.auth.user?.role === 'Partner'" 
+                <!-- Firm-wide Financials Banner (Partner only) -->
+                <div v-if="authUser?.role === 'Partner' || authUser?.role === 'Admin'" 
                     class="bg-blue-50 border border-blue-200 rounded-lg p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center">
                     
                     <div class="mb-4 sm:mb-0">
@@ -91,16 +105,17 @@ const formatCurrency = (amount) => {
                     </div>
                     
                     <Link :href="route('dashboard.overview')" 
-                            class="inline-flex items-center px-4 py-2 bg-blue-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-800 focus:bg-blue-800 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow">
+                            class="inline-flex items-center px-4 py-2 bg-blue-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-800 transition shadow">
                         View Firm Overview
                     </Link>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- KPI Section: Visible ONLY to Dashboard Owner or Partner/Admin -->
+                <div v-if="canViewKpis" class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="bg-white p-6 rounded-lg shadow flex justify-between items-start">
                         <div>
                             <h3 class="text-gray-500 text-sm font-semibold">Billable Hours (This Month)</h3>
-                            <p class="text-3xl font-bold text-gray-900">{{ kpis.hours }}</p>
+                            <p class="text-3xl font-bold text-gray-900">{{ kpis?.hours || 0 }}</p>
                         </div>
                         <button @click="openTimeEntryModal()" class="bg-purple-100 text-purple-700 px-3 py-1.5 rounded text-sm font-semibold hover:bg-purple-200 transition border border-purple-200">
                             + Log Time
@@ -108,19 +123,20 @@ const formatCurrency = (amount) => {
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow border-b-4 border-green-500">
                         <h3 class="text-gray-500 text-sm font-semibold">Billed Amount</h3>
-                        <p class="text-3xl font-bold text-gray-900">{{ formatCurrency(kpis.billed) }}</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ formatCurrency(kpis?.billed) }}</p>
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow border-b-4 border-blue-500">
                         <h3 class="text-gray-500 text-sm font-semibold">Unbilled Amount</h3>
-                        <p class="text-3xl font-bold text-gray-900">{{ formatCurrency(kpis.unbilled) }}</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ formatCurrency(kpis?.unbilled) }}</p>
                     </div>
-                    
                 </div>
 
+                <!-- Main Content Grid -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
                     <div class="lg:col-span-2 space-y-6">
                         
+                        <!-- Upcoming Events -->
                         <div class="bg-white p-6 rounded-lg shadow">
                             <div class="flex justify-between items-center mb-4 border-b pb-2">
                                 <h2 class="text-lg font-bold">Upcoming Events</h2>
@@ -130,7 +146,7 @@ const formatCurrency = (amount) => {
                             </div>
                             
                             <div class="max-h-80 overflow-y-auto pr-2">
-                                <ul class="space-y-4" v-if="events.length > 0">
+                                <ul class="space-y-4" v-if="events && events.length > 0">
                                     <li v-for="event in events" :key="event.id" class="bg-red-50 p-3 rounded-lg border border-red-100">
                                         <div class="flex justify-between items-start">
                                             <div>
@@ -151,6 +167,7 @@ const formatCurrency = (amount) => {
                             </div>
                         </div>
 
+                        <!-- Pending Tasks -->
                         <div class="bg-white p-6 rounded-lg shadow">
                             <div class="flex justify-between items-center mb-4 border-b pb-2">
                                 <h2 class="text-lg font-bold">Pending Tasks</h2>
@@ -160,7 +177,7 @@ const formatCurrency = (amount) => {
                             </div>
                             
                             <div class="max-h-80 overflow-y-auto pr-2">
-                                <ul class="space-y-4" v-if="tasks.length > 0">
+                                <ul class="space-y-4" v-if="tasks && tasks.length > 0">
                                     <li v-for="task in tasks" :key="task.id" class="flex items-start space-x-3 bg-gray-50 p-3 rounded-lg border border-gray-100">
                                         <input type="checkbox" class="mt-1 rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500">
                                         <div class="w-full">
@@ -185,19 +202,20 @@ const formatCurrency = (amount) => {
                         </div>
                     </div>
 
+                    <!-- Active Matters -->
                     <div class="bg-white p-6 rounded-lg shadow">
                         <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h2 class="text-lg font-bold mb-4 border-b pb-2">My Active Matters</h2>
+                            <h2 class="text-lg font-bold">Active Matters</h2>
                             <button @click="isMatterModalOpen = true" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200">
-                                    + Add Matter
+                                + Add Matter
                             </button>
                         </div>
                         <div class="max-h-[46rem] overflow-y-auto pr-2">
-                            <ul class="space-y-2">
+                            <ul class="space-y-2" v-if="matters && matters.length > 0">
                                 <li v-for="matter in matters" :key="matter.id">
                                     <Link :href="route('matters.show', matter.id)" class="block p-3 rounded hover:bg-gray-50 transition border border-transparent hover:border-gray-200">
                                         <div class="font-semibold text-blue-600">{{ matter.name }}</div>
-                                        <div class="font-semibold text-gray-600">{{ matter.client.name }}</div>
+                                        <div class="font-semibold text-gray-600">{{ matter.client?.name }}</div>
                                         <div class="text-xs text-gray-500 mt-1 flex justify-between">
                                             <span>{{ matter.authority }}</span>
                                             <span class="text-green-600">{{ matter.status }}</span>
@@ -205,6 +223,7 @@ const formatCurrency = (amount) => {
                                     </Link>
                                 </li>
                             </ul>
+                            <p v-else class="text-gray-500 text-sm italic">No active matters assigned.</p>
                         </div>
                     </div>
                     
@@ -212,34 +231,11 @@ const formatCurrency = (amount) => {
             </div>
         </div>
 
-        <DashboardTaskModal 
-            :show="isTaskModalOpen" 
-            :matters="matters"
-            :task="selectedTask"
-            @close="isTaskModalOpen = false" 
-        />
+        <!-- Modals -->
+        <DashboardTaskModal :show="isTaskModalOpen" :matters="matters" :task="selectedTask" @close="isTaskModalOpen = false" />
+        <DashboardEventModal :show="isEventModalOpen" :matters="matters" :event="selectedEvent" @close="isEventModalOpen = false" />
+        <DashboardMatterModal :show="isMatterModalOpen" :clients="clients" @close="isMatterModalOpen = false" />
+        <DashboardTimeEntryModal :show="isTimeEntryModalOpen" :matters="matters" :time-entry="selectedTimeEntry" @close="isTimeEntryModalOpen = false" />
 
-        <DashboardEventModal 
-            :show="isEventModalOpen" 
-            :matters="matters"
-            :event="selectedEvent"
-            @close="isEventModalOpen = false" 
-        />
-
-        <DashboardMatterModal 
-            :show="isMatterModalOpen" 
-            :clients="clients"
-            @close="isMatterModalOpen = false" 
-        />
-
-        <DashboardTimeEntryModal 
-        :show="isTimeEntryModalOpen" 
-        :matters="matters"
-        :time-entry="selectedTimeEntry"
-        @close="isTimeEntryModalOpen = false" 
-        />
-
-
-        
     </AuthenticatedLayout>
 </template>

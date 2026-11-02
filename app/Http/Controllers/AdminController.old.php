@@ -18,6 +18,7 @@ class AdminController extends Controller
         ]);
     }
 
+    //Creates a user and assigns email, password and role
     public function storeUser(Request $request)
     {
         $request->validate([

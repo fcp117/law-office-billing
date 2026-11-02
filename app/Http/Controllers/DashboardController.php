@@ -2,85 +2,56 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Carbon\Carbon;
+use App\Models\User;
 use App\Models\TimeEntry;
 use App\Models\Client;
-use App\Models\Event;
-use App\Models\Task;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index(?User $user = null, Request $request)
     {
-        $user = $request->user();
-        $currentMonth = Carbon::now()->month;
-        $currentYear = Carbon::now()->year;
+        // Fallback to the authenticated user if no user is specified in the route
+        $targetUserId = $request->query('user_id') ?? optional($user)->id ?? auth()->id();
+        $targetUser = User::findOrFail($targetUserId);
 
-        // 1. Calculate Monthly KPIs
-        $myTimeThisMonth = TimeEntry::where('user_id', $user->id)
-            ->whereMonth('start_time', $currentMonth)
-            ->whereYear('start_time', $currentYear);
+        // Fetch targeted user's data
+        $events = $targetUser->events()->with('matter')->orderBy('scheduled_at', 'asc')->get();
+        $tasks = $targetUser->tasks()->with('matter')->orderBy('deadline', 'asc')->get();
+        
+        // Matters assigned to this user
+        $matters = $targetUser->matters()->with('client')->get();
+        $clients = Client::all();
 
-        $totalHours = (clone $myTimeThisMonth)->sum('hours');
-        $totalBilled = (clone $myTimeThisMonth)->whereNotNull('invoice_id')->sum('amount');
-        $totalUnbilled = (clone $myTimeThisMonth)->whereNull('invoice_id')->sum('amount');
-
-        // 2. Fetch Action Items (Eager load the Matter so the UI can display the case name)
-        //$events = $user->events()
-          //  ->with('matter:id,name') // Only grab the ID and Name to save memory
-           // ->where('scheduled_at', '>=', now())
-           // ->orderBy('scheduled_at', 'asc')
-           // ->get();
-
-        // 1. Get an array of the IDs for the user's matters
-        $matterIds = $user->matters()->pluck('matters.id');
-
-        // 2. Query the Events table directly
-        $events = Event::with('matter:id,name') // <-- Add this line!
-        ->whereHas('matter.users', function ($query) use ($user) {
-            $query->where('users.id', $user->id); 
-        })
-        ->where('scheduled_at', '>=', now())
-        ->orderBy('scheduled_at', 'asc')
-        ->get();
-
-        //$tasks = $user->tasks()
-          //  ->with('matter:id,name')
-          //  ->where('status', 'Pending')
-          //  ->orderBy('deadline', 'asc')
-          //  ->take(5)
-          //  ->get();
-
-        $tasks = Task::with('matter:id,name') // <-- Add this line!
-        ->whereHas('matter.users', function ($query) use ($user) {
-            $query->where('users.id', $user->id); 
-        })
-        ->where('status', 'Pending')
-        ->orderBy('deadline', 'asc')
-        ->get();
-
-        // 3. Fetch Active Matters
-        $matters = $user->matters()
-            ->with(['client:id,name', 'tasks', 'events'])
-            ->where('status', 'Active')
-            ->orderBy('created_at', 'desc')
+        // Calculate KPIs for the target user using TimeEntry's perspective
+        $timeEntries = TimeEntry::where('user_id', $targetUser->id)
+            ->whereMonth('created_at', now()->month)
             ->get();
 
-        // 4. Fetch Clients (for the "Add Matter" button)
-        $clients = \App\Models\Client::orderBy('name', 'asc')->get();
+        $totalHours = $timeEntries->sum('hours');
+        $hourlyRate = $targetUser->standard_hourly_rate ?? 0;
+        
+        // KPI computations
+        $billedAmount = $timeEntries->where('is_billed', true)->sum(function($entry) use ($hourlyRate) {
+            return $entry->hours * $hourlyRate;
+        });
+
+        $unbilledAmount = $timeEntries->where('is_billed', false)->sum(function($entry) use ($hourlyRate) {
+            return $entry->hours * $hourlyRate;
+        });
 
         return Inertia::render('Dashboard', [
+            'targetUser' => $targetUser,
             'kpis' => [
                 'hours' => $totalHours,
-                'billed' => $totalBilled,
-                'unbilled' => $totalUnbilled
+                'billed' => $billedAmount,
+                'unbilled' => $unbilledAmount,
             ],
             'events' => $events,
             'tasks' => $tasks,
             'matters' => $matters,
-            'clients' => $clients
+            'clients' => $clients,
         ]);
     }
 }
