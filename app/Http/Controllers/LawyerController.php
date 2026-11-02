@@ -32,7 +32,7 @@ class LawyerController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'role' => ['required', 'string', Rule::in(['Partner', 'Associate'])],
+            'role' => ['required', 'string', Rule::in(['Partner', 'Associate', 'Paralegal'])],
             'standard_hourly_rate' => ['nullable', 'numeric', 'min:0'],
         ]);
 
