@@ -26,10 +26,22 @@ class DashboardController extends Controller
 
         // Calculate KPIs for the target user using TimeEntry's perspective
         // Eager load 'matter' to determine billing_type
-        $timeEntries = TimeEntry::with('matter')
-            ->where('user_id', $targetUser->id)
-            ->whereMonth('created_at', now()->month)
-            ->get();
+        $timeEntries = TimeEntry::with(['matter', 'invoice'])
+        ->where('user_id', $targetUser->id)
+        ->where(function ($query) {
+            $query->whereHas('invoice', function ($q) {
+                // Filter by Invoice creation date
+                $q->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year);
+            })
+            ->orWhere(function ($q) {
+                // Keep unbilled entries logged in the current month
+                $q->whereNull('invoice_id')
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year);
+            });
+        })
+        ->get();
 
         $hourlyRate = $targetUser->standard_hourly_rate ?? 0;
         
@@ -64,7 +76,7 @@ class DashboardController extends Controller
             // Add to billing type specific totals
             $kpis['by_billing_type'][$billingType]['hours'] += $entry->hours;
 
-            if ($entry->is_billed) {
+            if (!is_null($entry->invoice_id)) {
                 $kpis['aggregate']['billed'] += $amount;
                 $kpis['by_billing_type'][$billingType]['billed'] += $amount;
             } else {
