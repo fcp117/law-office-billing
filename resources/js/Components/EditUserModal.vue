@@ -77,7 +77,7 @@ const closeModal = () => {
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Standard Hourly Rate (Php)</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Standard Hourly Rate ($)</label>
                     <input type="number" step="0.01" v-model="form.standard_hourly_rate" placeholder="e.g. 3500.00" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
                     <div v-if="form.errors.standard_hourly_rate" class="text-red-500 text-xs mt-1">{{ form.errors.standard_hourly_rate }}</div>
                 </div>

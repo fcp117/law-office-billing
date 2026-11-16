@@ -76,7 +76,7 @@ const openTimeEntryModal = (entry = null) => {
 
 // Currency formatter
 const formatCurrency = (amount) => {
-    return '₱' + Number(amount || 0).toLocaleString('en-US', {
+    return '$' + Number(amount || 0).toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });
@@ -125,7 +125,7 @@ const formatCurrency = (amount) => {
                         <div class="bg-white p-6 rounded-lg shadow flex justify-between items-start border-b-4 border-gray-800">
                             <div>
                                 <h3 class="text-gray-500 text-sm font-semibold">Total Billable Hours (This Month)</h3>
-                                <p class="text-3xl font-bold text-gray-900">{{ kpis?.aggregate?.hours || 0 }}</p>
+                                <p class="text-3xl font-bold text-gray-900">{{ Number(kpis?.aggregate?.hours || 0).toFixed(2) }}</p>
                             </div>
                             <button @click="openTimeEntryModal()" class="bg-purple-100 text-purple-700 px-3 py-1.5 rounded text-sm font-semibold hover:bg-purple-200 transition border border-purple-200">
                                 + Log Time
@@ -150,7 +150,7 @@ const formatCurrency = (amount) => {
                                 <div class="space-y-2 text-sm">
                                     <div class="flex justify-between">
                                         <span class="text-gray-500 font-medium">Hours</span>
-                                        <span class="font-bold text-gray-900">{{ data.hours }}</span>
+                                        <span class="font-bold text-gray-900">{{ Number(data.hours).toFixed(2) }}</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-gray-500 font-medium">Billed</span>

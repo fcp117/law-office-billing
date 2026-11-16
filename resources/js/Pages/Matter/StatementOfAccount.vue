@@ -4,7 +4,7 @@ import { Head, Link } from '@inertiajs/vue3';
 
 const props = defineProps({ matter: Object });
 
-const formatCurrency = (amt) => '₱' + Number(amt || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatCurrency = (amt) => '$' + Number(amt || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 </script>
 
 <template>

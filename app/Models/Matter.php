@@ -7,18 +7,42 @@ use Illuminate\Database\Eloquent\Model;
 class Matter extends Model
 {
     protected $fillable = [
-        'name', 'description', 'practice_area', 'type', 'client_id',
-        'authority', 'party_represented', 'party_represented_role',
-        'party_adverse', 'party_adverse_role', 'status', 'start_date',
-        'closing_date', 'remarks', 'created_by', 'modified_by',
-        'billing_type', 'fixed_fee_amount', 'contingency_percentage', 'settlement_judgment',
+        'name',
+        'description',
+        'practice_area',
+        'type',
+        'client_id',
+        'authority',
+        'party_represented',
+        'party_represented_role',
+        'party_adverse',
+        'party_adverse_role',
+        'status',
+        'start_date',
+        'closing_date',
+        'remarks',
+        'billing_type',
+        'currency',
+        'contingency_percentage',
+        'settlement_judgment',
+        'fixed_fee_amount',
+        'created_by',
+        'modified_by',
     ];
 
     // Ensures these columns are treated as Dates, not just strings
     protected $casts = [
         'start_date' => 'date',
         'closing_date' => 'date',
+        'contingency_percentage' => 'decimal:2',
+        'settlement_judgment' => 'decimal:2',
+        'fixed_fee_amount' => 'decimal:2',
     ];
+
+    public function getCurrencySymbolAttribute(): string
+    {
+        return ($this->currency ?? 'PHP') === 'PHP' ? '₱' : '$';
+    }
 
     // Relationships
     public function client()

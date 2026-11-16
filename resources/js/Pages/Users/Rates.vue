@@ -16,13 +16,17 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
-    activeRate: {
+    activeRates: {
         type: Object,
-        default: null,
+        default: () => ({ USD: null, PHP: null }),
     },
     ranks: {
         type: Array,
         default: () => [],
+    },
+    currencies: {
+        type: Array,
+        default: () => ['USD', 'PHP'],
     },
     unbilledCount: {
         type: Number,
@@ -37,13 +41,41 @@ const flashError = computed(() => page.props.flash?.error);
 const todayStr = new Date().toISOString().split('T')[0];
 
 const selectedLawyerId = ref(props.lawyer.id);
+const currencyFilter = ref('ALL');
+
+const defaultCurrency = computed(() => props.currencies[0] || 'USD');
+
+const getDefaultRank = (currency) => {
+    return (
+        props.activeRates?.[currency]?.rank ||
+        props.activeRates?.USD?.rank ||
+        props.activeRates?.PHP?.rank ||
+        props.ranks[0] ||
+        ''
+    );
+};
 
 const form = useForm({
-    rank: props.activeRate?.rank || props.ranks[0] || '',
-    hourly_rate: props.activeRate?.hourly_rate || '',
+    currency: defaultCurrency.value,
+    rank: getDefaultRank(defaultCurrency.value),
+    hourly_rate: props.activeRates?.[defaultCurrency.value]?.hourly_rate || '',
     effective_from: todayStr,
     recalculate_unbilled: false,
 });
+
+// Update default hourly rate & rank when toggling currency in the form
+watch(
+    () => form.currency,
+    (newCurrency) => {
+        const currentForCurrency = props.activeRates?.[newCurrency];
+        if (currentForCurrency) {
+            form.rank = currentForCurrency.rank;
+            form.hourly_rate = currentForCurrency.hourly_rate;
+        } else {
+            form.hourly_rate = '';
+        }
+    }
+);
 
 // Sync form defaults and dropdown state when switching to another lawyer
 watch(
@@ -51,8 +83,9 @@ watch(
     (newId) => {
         selectedLawyerId.value = newId;
         form.clearErrors();
-        form.rank = props.activeRate?.rank || props.ranks[0] || '';
-        form.hourly_rate = props.activeRate?.hourly_rate || '';
+        form.currency = defaultCurrency.value;
+        form.rank = getDefaultRank(defaultCurrency.value);
+        form.hourly_rate = props.activeRates?.[defaultCurrency.value]?.hourly_rate || '';
         form.effective_from = todayStr;
         form.recalculate_unbilled = false;
     }
@@ -64,6 +97,17 @@ const switchLawyer = () => {
     }
 };
 
+const filteredRates = computed(() => {
+    if (currencyFilter.value === 'ALL') {
+        return props.rates;
+    }
+    return props.rates.filter((r) => r.currency === currencyFilter.value);
+});
+
+const currencySymbol = (currency) => {
+    return currency === 'PHP' ? '₱' : '$';
+};
+
 const deletingId = ref(null);
 
 const submitRate = () => {
@@ -72,20 +116,20 @@ const submitRate = () => {
         onSuccess: () => {
             form.reset('recalculate_unbilled');
             form.effective_from = todayStr;
-            if (props.activeRate?.rank) {
-                form.rank = props.activeRate.rank;
-            }
-            if (props.activeRate?.hourly_rate) {
-                form.hourly_rate = props.activeRate.hourly_rate;
+            const activeForSelected = props.activeRates?.[form.currency];
+            if (activeForSelected) {
+                form.rank = activeForSelected.rank;
+                form.hourly_rate = activeForSelected.hourly_rate;
             }
         },
     });
 };
 
 const confirmDelete = (rate) => {
+    const formatted = formatCurrency(rate.hourly_rate, rate.currency);
     if (
         !confirm(
-            `Remove ${props.lawyer.name}'s ${rate.rank} rate ($${Number(rate.hourly_rate).toFixed(2)}/hr) effective ${formatDate(rate.effective_from)}?`
+            `Remove ${props.lawyer.name}'s ${rate.currency} ${rate.rank} rate (${formatted}/hr) effective ${formatDate(rate.effective_from)}?`
         )
     ) {
         return;
@@ -101,7 +145,8 @@ const confirmDelete = (rate) => {
 };
 
 const getRateStatus = (rate) => {
-    if (props.activeRate && props.activeRate.id === rate.id) {
+    const activeForCurrency = props.activeRates?.[rate.currency];
+    if (activeForCurrency && activeForCurrency.id === rate.id) {
         return 'Active';
     }
     const effectiveDate = rate.effective_from.split('T')[0];
@@ -111,10 +156,11 @@ const getRateStatus = (rate) => {
     return 'Historical';
 };
 
-const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+const formatCurrency = (amount, currency = 'USD') => {
+    const locale = currency === 'PHP' ? 'en-PH' : 'en-US';
+    return new Intl.NumberFormat(locale, {
         style: 'currency',
-        currency: 'USD',
+        currency: currency || 'USD',
         minimumFractionDigits: 2,
     }).format(Number(amount || 0));
 };
@@ -176,23 +222,37 @@ const formatDate = (dateString) => {
                     </div>
 
                     <p class="mt-1 text-sm text-gray-500">
-                        Managing schedule for <span class="font-medium text-gray-700">{{ lawyer.name }}</span> ({{ lawyer.email }})
+                        Managing USD and PHP schedules for <span class="font-medium text-gray-700">{{ lawyer.name }}</span> ({{ lawyer.email }})
                     </p>
                 </div>
 
                 <!-- Summary Badges -->
                 <div class="flex flex-wrap items-center gap-3">
+                    <!-- Active USD Rate -->
                     <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2">
-                        <div class="text-xs font-medium uppercase tracking-wider text-gray-500">Current Rate</div>
+                        <div class="text-xs font-medium uppercase tracking-wider text-gray-500">Current USD Rate</div>
                         <div class="mt-0.5 text-base font-bold text-gray-900">
-                            <template v-if="activeRate">
-                                {{ formatCurrency(activeRate.hourly_rate) }}/hr
-                                <span class="ml-1 text-xs font-normal text-gray-600">({{ activeRate.rank }})</span>
+                            <template v-if="activeRates?.USD">
+                                {{ formatCurrency(activeRates.USD.hourly_rate, 'USD') }}/hr
+                                <span class="ml-1 text-xs font-normal text-gray-600">({{ activeRates.USD.rank }})</span>
                             </template>
-                            <span v-else class="text-sm font-normal text-amber-600">No active rate set</span>
+                            <span v-else class="text-sm font-normal text-amber-600">Not set</span>
                         </div>
                     </div>
 
+                    <!-- Active PHP Rate -->
+                    <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2">
+                        <div class="text-xs font-medium uppercase tracking-wider text-gray-500">Current PHP Rate</div>
+                        <div class="mt-0.5 text-base font-bold text-gray-900">
+                            <template v-if="activeRates?.PHP">
+                                {{ formatCurrency(activeRates.PHP.hourly_rate, 'PHP') }}/hr
+                                <span class="ml-1 text-xs font-normal text-gray-600">({{ activeRates.PHP.rank }})</span>
+                            </template>
+                            <span v-else class="text-sm font-normal text-amber-600">Not set</span>
+                        </div>
+                    </div>
+
+                    <!-- Unbilled Entries -->
                     <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2">
                         <div class="text-xs font-medium uppercase tracking-wider text-gray-500">Unbilled Entries</div>
                         <div class="mt-0.5 text-base font-bold text-gray-900">
@@ -225,10 +285,36 @@ const formatDate = (dateString) => {
                     <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                         <h3 class="text-base font-semibold text-gray-900">Add Rate Schedule</h3>
                         <p class="mt-1 text-xs text-gray-500">
-                            Assign a rank and hourly billing rate for <span class="font-medium text-gray-700">{{ lawyer.name }}</span>.
+                            Assign a currency, rank, and hourly billing rate for <span class="font-medium text-gray-700">{{ lawyer.name }}</span>.
                         </p>
 
                         <form @submit.prevent="submitRate" class="mt-5 space-y-4">
+                            <!-- Currency Selector -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Currency
+                                </label>
+                                <div class="mt-1 grid grid-cols-2 gap-2">
+                                    <button
+                                        v-for="curr in currencies"
+                                        :key="curr"
+                                        type="button"
+                                        @click="form.currency = curr"
+                                        :class="[
+                                            'flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition',
+                                            form.currency === curr
+                                                ? 'border-blue-600 bg-blue-50 text-blue-700 ring-1 ring-blue-600'
+                                                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
+                                        ]"
+                                    >
+                                        <span>{{ curr === 'PHP' ? '₱ PHP' : '$ USD' }}</span>
+                                    </button>
+                                </div>
+                                <p v-if="form.errors.currency" class="mt-1 text-xs text-red-600">
+                                    {{ form.errors.currency }}
+                                </p>
+                            </div>
+
                             <!-- Rank -->
                             <div>
                                 <label for="rank" class="block text-sm font-medium text-gray-700">
@@ -253,11 +339,11 @@ const formatDate = (dateString) => {
                             <!-- Hourly Rate -->
                             <div>
                                 <label for="hourly_rate" class="block text-sm font-medium text-gray-700">
-                                    Hourly Rate (USD)
+                                    Hourly Rate ({{ form.currency }})
                                 </label>
                                 <div class="relative mt-1 rounded-lg shadow-sm">
                                     <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                        <span class="text-gray-500 sm:text-sm">$</span>
+                                        <span class="text-gray-500 sm:text-sm">{{ currencySymbol(form.currency) }}</span>
                                     </div>
                                     <input
                                         id="hourly_rate"
@@ -304,9 +390,9 @@ const formatDate = (dateString) => {
                                         class="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                     />
                                     <span class="text-xs text-gray-700">
-                                        <span class="font-medium text-gray-900">Recalculate unbilled time entries</span>
+                                        <span class="font-medium text-gray-900">Recalculate unbilled {{ form.currency }} entries</span>
                                         <span class="mt-0.5 block text-gray-500">
-                                            Update {{ lawyer.name }}'s unbilled entries logged on or after the effective date ({{ unbilledCount }} total unbilled).
+                                            Update {{ lawyer.name }}'s unbilled {{ form.currency }} entries logged on or after the effective date.
                                         </span>
                                     </span>
                                 </label>
@@ -320,7 +406,7 @@ const formatDate = (dateString) => {
                                     class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
                                 >
                                     <span v-if="form.processing">Saving Rate...</span>
-                                    <span v-else>Save Rate for {{ lawyer.name }}</span>
+                                    <span v-else>Save {{ form.currency }} Rate for {{ lawyer.name }}</span>
                                 </button>
                             </div>
                         </form>
@@ -330,19 +416,51 @@ const formatDate = (dateString) => {
                 <!-- Right Column: Rate History Table -->
                 <div class="lg:col-span-2">
                     <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                        <div class="border-b border-gray-200 px-6 py-4">
-                            <h3 class="text-base font-semibold text-gray-900">
-                                Rate History &amp; Schedule — {{ lawyer.name }}
-                            </h3>
-                            <p class="mt-0.5 text-xs text-gray-500">
-                                Ordered from newest effective date to oldest.
-                            </p>
+                        <div class="flex flex-col gap-3 border-b border-gray-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h3 class="text-base font-semibold text-gray-900">
+                                    Rate History &amp; Schedule — {{ lawyer.name }}
+                                </h3>
+                                <p class="mt-0.5 text-xs text-gray-500">
+                                    Ordered from newest effective date to oldest.
+                                </p>
+                            </div>
+
+                            <!-- Currency Filter Tabs -->
+                            <div class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 text-xs font-medium">
+                                <button
+                                    type="button"
+                                    @click="currencyFilter = 'ALL'"
+                                    :class="[
+                                        'rounded-md px-2.5 py-1 transition',
+                                        currencyFilter === 'ALL'
+                                            ? 'bg-white text-gray-900 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900',
+                                    ]"
+                                >
+                                    All ({{ rates.length }})
+                                </button>
+                                <button
+                                    v-for="curr in currencies"
+                                    :key="curr"
+                                    type="button"
+                                    @click="currencyFilter = curr"
+                                    :class="[
+                                        'rounded-md px-2.5 py-1 transition',
+                                        currencyFilter === curr
+                                            ? 'bg-white text-gray-900 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900',
+                                    ]"
+                                >
+                                    {{ curr }} ({{ rates.filter((r) => r.currency === curr).length }})
+                                </button>
+                            </div>
                         </div>
 
-                        <div v-if="rates.length === 0" class="px-6 py-12 text-center">
-                            <p class="text-sm font-medium text-gray-900">No billing rates configured</p>
+                        <div v-if="filteredRates.length === 0" class="px-6 py-12 text-center">
+                            <p class="text-sm font-medium text-gray-900">No billing rates found</p>
                             <p class="mt-1 text-xs text-gray-500">
-                                Use the form on the left to assign an initial rank and hourly rate for {{ lawyer.name }}.
+                                Use the form on the left to assign an hourly rate for {{ lawyer.name }}.
                             </p>
                         </div>
 
@@ -351,6 +469,7 @@ const formatDate = (dateString) => {
                                 <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
                                     <tr>
                                         <th scope="col" class="px-6 py-3">Effective From</th>
+                                        <th scope="col" class="px-6 py-3">Currency</th>
                                         <th scope="col" class="px-6 py-3">Rank</th>
                                         <th scope="col" class="px-6 py-3">Hourly Rate</th>
                                         <th scope="col" class="px-6 py-3">Status</th>
@@ -360,18 +479,30 @@ const formatDate = (dateString) => {
                                 </thead>
                                 <tbody class="divide-y divide-gray-200 bg-white">
                                     <tr
-                                        v-for="rate in rates"
+                                        v-for="rate in filteredRates"
                                         :key="rate.id"
                                         :class="getRateStatus(rate) === 'Active' ? 'bg-blue-50/40' : ''"
                                     >
                                         <td class="whitespace-nowrap px-6 py-4 font-medium text-gray-900">
                                             {{ formatDate(rate.effective_from) }}
                                         </td>
+                                        <td class="whitespace-nowrap px-6 py-4">
+                                            <span
+                                                :class="[
+                                                    'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold',
+                                                    rate.currency === 'PHP'
+                                                        ? 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20'
+                                                        : 'bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-600/20',
+                                                ]"
+                                            >
+                                                {{ rate.currency }}
+                                            </span>
+                                        </td>
                                         <td class="whitespace-nowrap px-6 py-4 text-gray-700">
                                             {{ rate.rank }}
                                         </td>
                                         <td class="whitespace-nowrap px-6 py-4 font-semibold text-gray-900">
-                                            {{ formatCurrency(rate.hourly_rate) }}
+                                            {{ formatCurrency(rate.hourly_rate, rate.currency) }}
                                         </td>
                                         <td class="whitespace-nowrap px-6 py-4">
                                             <span

@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 // Import our Modals
 import TaskModal from '@/Components/TaskModal.vue';
@@ -11,8 +11,21 @@ import DashboardMatterModal from '@/Components/DashboardMatterModal.vue';
 
 const props = defineProps({
     matter: Object,
-    clients: Array
-    });
+    clients: Array,
+});
+
+const matterCurrency = computed(() => props.matter.currency || 'PHP');
+const currencySymbol = computed(() => (matterCurrency.value === 'PHP' ? '₱' : '$'));
+
+const formatCurrency = (amount) => {
+    const locale = matterCurrency.value === 'PHP' ? 'en-PH' : 'en-US';
+    return new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: matterCurrency.value,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(Number(amount || 0));
+};
 
 // ==========================================
 // 1. INVOICING & PAYMENTS LOGIC
@@ -25,11 +38,11 @@ const form = useForm({
     payment_date: new Date().toISOString().split('T')[0],
     payment_method: 'Bank Transfer',
     reference_number: '',
-    });
+});
 
 const openPaymentModal = (invoice) => {
     selectedInvoice.value = invoice;
-    form.amount = invoice.total_amount;
+    form.amount = invoice.balance_due ?? invoice.total_amount;
     isPaymentModalOpen.value = true;
 };
 
@@ -68,7 +81,7 @@ const isTaskModalOpen = ref(false);
 const selectedTask = ref(null);
 
 const openTaskModal = (task = null) => {
-    selectedTask.value = task; // null for create, object for edit
+    selectedTask.value = task;
     isTaskModalOpen.value = true;
 };
 
@@ -85,7 +98,7 @@ const isEventModalOpen = ref(false);
 const selectedEvent = ref(null);
 
 const openEventModal = (event = null) => {
-    selectedEvent.value = event; // null for create, object for edit
+    selectedEvent.value = event;
     isEventModalOpen.value = true;
 };
 
@@ -95,8 +108,6 @@ const deleteEvent = (event) => {
     }
 };
 
-// Add this near your other logic blocks in <script setup>
-
 // ==========================================
 // 4. GENERATE INVOICE LOGIC
 // ==========================================
@@ -104,27 +115,25 @@ const generateInvoice = () => {
     if (confirm('Generate an invoice for all unbilled time entries?')) {
         const today = new Date();
         const dueDate = new Date();
-        dueDate.setDate(today.getDate() + 30); // Set due date to Net 30
+        dueDate.setDate(today.getDate() + 30);
 
-        router.post(route('invoices.store', props.matter.id), {
-            issue_date: today.toISOString().split('T')[0],
-            due_date: dueDate.toISOString().split('T')[0],
-            remarks: 'Thank you for your business.' // Default remark
-        }, {
-            preserveScroll: true,
-            onSuccess: () => {
-                // Optional: You can add a toast notification here
-                console.log('Invoice generated successfully.');
+        router.post(
+            route('invoices.store', props.matter.id),
+            {
+                issue_date: today.toISOString().split('T')[0],
+                due_date: dueDate.toISOString().split('T')[0],
+                remarks: 'Thank you for your business.',
+            },
+            {
+                preserveScroll: true,
             }
-        });
+        );
     }
 };
 
 // ==========================================
 // 5. CREATE AND EDIT MATTERS
 // ==========================================
-
-// Setup Modal State and Actions
 const isMatterModalOpen = ref(false);
 
 const openMatterModal = () => {
@@ -132,35 +141,33 @@ const openMatterModal = () => {
 };
 
 const deleteMatter = () => {
-    if (confirm(`Are you sure you want to completely delete "${props.matter.name}"? This action will permanently wipe all associated tasks, events, and time entries.`)) {
+    if (
+        confirm(
+            `Are you sure you want to completely delete "${props.matter.name}"? This action will permanently wipe all associated tasks, events, and time entries.`
+        )
+    ) {
         router.delete(route('matters.destroy', props.matter.id));
     }
 };
 </script>
 
 <template>
-    <!-- Dynamic page title based on the case name -->
     <Head :title="matter.name" />
 
     <AuthenticatedLayout>
-        
-        <!-- The Header Slot (Matches the Dashboard style) -->
         <template #header>
             <div class="flex justify-between items-center">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                     Matter Details
                 </h2>
-                <!-- Optional: A back button to return to the dashboard -->
                 <Link :href="route('dashboard')" class="text-sm text-blue-600 hover:underline">
                     Back to Dashboard
                 </Link>
             </div>
         </template>
 
-        <!-- The Main Content Wrapper -->
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
-                
                 <!-- Header Section -->
                 <div class="bg-slate-800 text-white p-6 rounded-lg shadow">
                     <div class="flex justify-between items-start">
@@ -169,16 +176,25 @@ const deleteMatter = () => {
                             <p class="mt-2 text-gray-300">Client: {{ matter.client.name }} | Authority: {{ matter.authority }}</p>
 
                             <!-- Billing Information Summary -->
-                            <div class="mt-4 p-3 bg-slate-700/50 rounded border border-slate-600 inline-block text-sm">
-                                <span class="text-gray-400">Billing Type:</span> 
-                                <span class="text-white font-medium capitalize ml-1 mr-4">
-                                    {{ matter.billing_type ? matter.billing_type.replace('_', ' ') : 'N/A' }}
+                            <div class="mt-4 p-3 bg-slate-700/50 rounded border border-slate-600 inline-flex flex-wrap items-center gap-y-2 text-sm">
+                                <span>
+                                    <span class="text-gray-400">Currency:</span>
+                                    <span class="ml-1 mr-4 px-2 py-0.5 rounded bg-slate-600 text-white font-semibold text-xs">
+                                        {{ matterCurrency }} ({{ currencySymbol }})
+                                    </span>
+                                </span>
+
+                                <span class="border-l border-slate-500 pl-4">
+                                    <span class="text-gray-400">Billing Type:</span>
+                                    <span class="text-white font-medium capitalize ml-1 mr-4">
+                                        {{ matter.billing_type ? matter.billing_type.replace('_', ' ') : 'N/A' }}
+                                    </span>
                                 </span>
 
                                 <template v-if="matter.billing_type === 'fixed_rate'">
                                     <span class="text-gray-400 border-l border-slate-500 pl-4">Fixed Fee:</span>
                                     <span class="text-white font-medium ml-1">
-                                        Php {{ parseFloat(matter.fixed_fee_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                                        {{ formatCurrency(matter.fixed_fee_amount) }}
                                     </span>
                                 </template>
 
@@ -187,15 +203,15 @@ const deleteMatter = () => {
                                     <span class="text-white font-medium ml-1 mr-4">
                                         {{ matter.contingency_percentage || 0 }}%
                                     </span>
-                                    
+
                                     <span class="text-gray-400 border-l border-slate-500 pl-4">Settlement / Judgment:</span>
                                     <span class="text-white font-medium ml-1">
-                                        Php {{ parseFloat(matter.settlement_judgment || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                                        {{ formatCurrency(matter.settlement_judgment) }}
                                     </span>
                                 </template>
                             </div>
 
-                            <!-- Edit & Delete Buttons -->
+                            <!-- Edit Button -->
                             <div class="mt-4 space-x-3">
                                 <button @click="openMatterModal" class="text-sm bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-semibold transition">
                                     Edit Matter Details
@@ -208,30 +224,30 @@ const deleteMatter = () => {
                         </span>
                     </div>
 
-                    <!-- Handling Lawyers now inside the Summary Card -->
+                    <!-- Handling Lawyers -->
                     <div class="border-t border-slate-700 pt-4 mt-4">
                         <h3 class="text-sm font-semibold text-gray-400 uppercase mb-2">Handling Lawyers</h3>
                         <div class="flex flex-wrap gap-4">
                             <div v-for="user in matter.users" :key="user.id" class="text-sm">
-                                <span class="font-bold">{{ user.name }}</span> 
+                                <span class="font-bold">{{ user.name }}</span>
                                 <span class="text-slate-400"> ({{ user.role }})</span>
                             </div>
                         </div>
                     </div>
-                </div> <!--End of Header Section-->
+                </div>
             </div>
         </div>
+
         <!-- Content Stack -->
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
+        <div class="py-12">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Tasks Section -->
                     <div class="bg-white p-6 rounded-lg shadow">
                         <div class="flex justify-between items-center mb-4 border-b pb-2">
                             <h2 class="text-xl font-bold mb-4 border-b pb-2">Tasks</h2>
                             <button v-if="matter.status !== 'Completed'" @click="openTaskModal()" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200">
-                                    + Add Task
+                                + Add Task
                             </button>
                         </div>
                         <table class="w-full text-left" v-if="matter.tasks && matter.tasks.length > 0">
@@ -248,8 +264,10 @@ const deleteMatter = () => {
                                     <td class="p-3 font-medium">{{ task.title }}</td>
                                     <td class="p-3 text-slate-600">{{ new Date(task.deadline).toLocaleDateString() }}</td>
                                     <td class="p-3">
-                                        <span class="px-2 py-1 text-xs rounded-full" 
-                                            :class="task.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'">
+                                        <span
+                                            class="px-2 py-1 text-xs rounded-full"
+                                            :class="task.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
+                                        >
                                             {{ task.status }}
                                         </span>
                                     </td>
@@ -270,10 +288,10 @@ const deleteMatter = () => {
                         <div class="flex justify-between items-center mb-4 border-b pb-2">
                             <h2 class="text-xl font-bold mb-4 border-b pb-2">Events</h2>
                             <button v-if="matter.status !== 'Completed'" @click="openEventModal()" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200">
-                                    + Add Event
+                                + Add Event
                             </button>
                         </div>
-                        
+
                         <table class="w-full text-left" v-if="matter.events && matter.events.length > 0">
                             <thead>
                                 <tr class="bg-slate-50 text-slate-600 text-sm">
@@ -296,8 +314,10 @@ const deleteMatter = () => {
                                         </div>
                                     </td>
                                     <td class="p-3">
-                                        <span class="px-2 py-1 text-xs rounded-full" 
-                                            :class="event.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'">
+                                        <span
+                                            class="px-2 py-1 text-xs rounded-full"
+                                            :class="event.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'"
+                                        >
                                             {{ event.status }}
                                         </span>
                                     </td>
@@ -306,130 +326,132 @@ const deleteMatter = () => {
                         </table>
                         <p v-else class="text-slate-500 italic">No events scheduled.</p>
                     </div>
-            </div>
-        </div>  
-    </div>  
-                <div class="lg:col-span-2 space-y-6 px-12">
-                    <!-- Time Entries Section -->
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <div class="flex justify-between items-center border-b pb-2 mb-4">
-                            <h2 class="text-xl font-bold">Time Entries (Running Billable)</h2>
-                            <div class="space-x-3">
-                                <button v-if="matter.status !== 'Completed'"
-                                        @click="openTimeEntryModal()" 
-                                        class="bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded text-sm font-semibold hover:bg-purple-200 transition">
-                                    + Log Hours
-                                </button>
-                            </div>
-                            <button @click="generateInvoice" class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-blue-700 transition">
-                                Generate Invoice
-                            </button>
-                        </div>
-                        <table class="w-full text-left" v-if="matter.time_entries && matter.time_entries.length > 0">
-                            <thead>
-                                <tr class="bg-slate-50 text-slate-600 text-sm">
-                                    <th class="p-3">Lawyer</th>
-                                    <th class="p-3">Date</th>
-                                    <th class="p-3">Description</th>
-                                    <th class="p-3">Hours</th>
-                                    <th class="p-3">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="entry in matter.time_entries" :key="entry.id" class="border-b">
-                                    <td class="p-3 font-medium">{{ entry.user?.name || 'Unknown User' }}</td> 
-                                    <td class="p-3 text-slate-600">{{ new Date(entry.start_time).toLocaleDateString() }}</td>
-                                    <td class="p-3 text-slate-600">{{ entry.description }}</td>
-                                    <td class="p-3 text-slate-600">{{ entry.hours }}</td>
-                                    <td class="p-3 text-slate-600">Php {{ parseFloat(entry.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <p v-else class="text-slate-500 italic">No time logged for this matter yet.</p>
-                    </div>
-
-                    <!-- Invoices Section -->
-                    <div class="bg-white p-6 rounded-lg shadow mt-6">
-                        <h2 class="text-xl font-bold mb-4 border-b pb-2">Invoices & Payments</h2>
-                        
-                        <table class="w-full text-left" v-if="matter.invoices && matter.invoices.length > 0">
-                            <thead>
-                                <tr class="bg-slate-50 text-slate-600 text-sm">
-                                    <th class="p-3">Invoice #</th>
-                                    <th class="p-3">Issue Date</th>
-                                    <th class="p-3">Status</th>
-                                    <th class="p-3">Total Amount</th>
-                                    <th class="p-3">Total Payments</th>
-                                    <th class="p-3">Balance Due</th>
-                                    <th class="p-3 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="invoice in matter.invoices" :key="invoice.id" class="border-b">
-                                    <td class="p-3 font-medium">
-                                        <Link :href="route('invoices.show', invoice.id)" class="text-blue-600 hover:text-blue-800 hover:underline">
-                                            {{ invoice.invoice_number }}
-                                        </Link>
-                                    </td>
-                                    <td class="p-3 text-slate-600">{{ new Date(invoice.issue_date).toLocaleDateString() }}</td>
-                                    <td class="p-3">
-                                        <!-- Dynamic Status Badges -->
-                                        <span class="px-2 py-1 text-xs font-bold rounded-full" 
-                                            :class="{
-                                                'bg-green-100 text-green-800': invoice.status === 'Paid',
-                                                'bg-blue-100 text-blue-800': invoice.status === 'Sent',
-                                                'bg-slate-100 text-slate-800': invoice.status === 'Draft'
-                                            }">
-                                            {{ invoice.status }}
-                                        </span>
-                                    </td>
-                                    <td class="p-3 font-medium text-slate-800">
-                                        Php {{ parseFloat(invoice.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
-                                    </td>
-                                    <td class="p-3 font-medium text-slate-800">
-                                        Php {{ parseFloat(invoice.total_payments).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
-                                    </td>
-                                    <td class="p-3 font-medium text-slate-800">
-                                        Php {{ parseFloat(invoice.balance_due).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
-                                    </td>
-                                    <td class="p-3 text-right">
-                                        <!-- Only show the Record Payment button if the invoice isn't paid yet -->
-                                        <button v-if="invoice.status !== 'Paid'" 
-                                                @click="openPaymentModal(invoice)"
-                                                class="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded border border-blue-200 hover:bg-blue-600 hover:text-white font-semibold transition">
-                                            Record Payment
-                                        </button>
-                                        <!-- Show a view button if it is paid -->
-                                        <button v-else 
-                                                class="text-sm text-slate-500 hover:text-slate-800 underline transition">
-                                            View Receipt
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <p v-else class="text-slate-500 italic">No invoices have been generated for this matter yet.</p>
-                    </div>
-
-                     <!-- Add this card into your summary grid -->
-                    <div class="bg-white p-6 rounded-lg shadow border-b-4 border-amber-500">
-                        <h3 class="text-gray-500 text-sm font-semibold">Total Unpaid Amount</h3>
-                        <p class="text-3xl font-bold text-gray-900 mt-1">
-                            Php {{ parseFloat(matter.total_unpaid_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
-                        </p>
-                        <div class="mt-4">
-                            <Link :href="route('matters.statement', matter.id)" class="text-xs bg-amber-50 text-amber-700 px-3 py-1.5 rounded font-semibold border border-amber-200 hover:bg-amber-100 transition">
-                                View Statement of Account
-                            </Link>
-                        </div>
-                    </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2 space-y-6 px-12">
+            <!-- Time Entries Section -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex justify-between items-center border-b pb-2 mb-4">
+                    <h2 class="text-xl font-bold">Time Entries (Running Billable — {{ matterCurrency }})</h2>
+                    <div class="space-x-3">
+                        <button
+                            v-if="matter.status !== 'Completed'"
+                            @click="openTimeEntryModal()"
+                            class="bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded text-sm font-semibold hover:bg-purple-200 transition"
+                        >
+                            + Log Hours
+                        </button>
+                    </div>
+                    <button @click="generateInvoice" class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-blue-700 transition">
+                        Generate Invoice
+                    </button>
+                </div>
+                <table class="w-full text-left" v-if="matter.time_entries && matter.time_entries.length > 0">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-600 text-sm">
+                            <th class="p-3">Lawyer</th>
+                            <th class="p-3">Date</th>
+                            <th class="p-3">Description</th>
+                            <th class="p-3">Hours</th>
+                            <th class="p-3">Amount ({{ matterCurrency }})</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="entry in matter.time_entries" :key="entry.id" class="border-b">
+                            <td class="p-3 font-medium">{{ entry.user?.name || 'Unknown User' }}</td>
+                            <td class="p-3 text-slate-600">{{ new Date(entry.start_time).toLocaleDateString() }}</td>
+                            <td class="p-3 text-slate-600">{{ entry.description }}</td>
+                            <td class="p-3 text-slate-600">{{ entry.hours }}</td>
+                            <td class="p-3 text-slate-600">{{ formatCurrency(entry.amount) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p v-else class="text-slate-500 italic">No time logged for this matter yet.</p>
+            </div>
+
+            <!-- Invoices Section -->
+            <div class="bg-white p-6 rounded-lg shadow mt-6">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">Invoices & Payments ({{ matterCurrency }})</h2>
+
+                <table class="w-full text-left" v-if="matter.invoices && matter.invoices.length > 0">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-600 text-sm">
+                            <th class="p-3">Invoice #</th>
+                            <th class="p-3">Issue Date</th>
+                            <th class="p-3">Status</th>
+                            <th class="p-3">Total Amount</th>
+                            <th class="p-3">Total Payments</th>
+                            <th class="p-3">Balance Due</th>
+                            <th class="p-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="invoice in matter.invoices" :key="invoice.id" class="border-b">
+                            <td class="p-3 font-medium">
+                                <Link :href="route('invoices.show', invoice.id)" class="text-blue-600 hover:text-blue-800 hover:underline">
+                                    {{ invoice.invoice_number }}
+                                </Link>
+                            </td>
+                            <td class="p-3 text-slate-600">{{ new Date(invoice.issue_date).toLocaleDateString() }}</td>
+                            <td class="p-3">
+                                <span
+                                    class="px-2 py-1 text-xs font-bold rounded-full"
+                                    :class="{
+                                        'bg-green-100 text-green-800': invoice.status === 'Paid',
+                                        'bg-blue-100 text-blue-800': invoice.status === 'Sent',
+                                        'bg-slate-100 text-slate-800': invoice.status === 'Draft',
+                                    }"
+                                >
+                                    {{ invoice.status }}
+                                </span>
+                            </td>
+                            <td class="p-3 font-medium text-slate-800">
+                                {{ formatCurrency(invoice.total_amount) }}
+                            </td>
+                            <td class="p-3 font-medium text-slate-800">
+                                {{ formatCurrency(invoice.total_payments) }}
+                            </td>
+                            <td class="p-3 font-medium text-slate-800">
+                                {{ formatCurrency(invoice.balance_due) }}
+                            </td>
+                            <td class="p-3 text-right">
+                                <button
+                                    v-if="invoice.status !== 'Paid'"
+                                    @click="openPaymentModal(invoice)"
+                                    class="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded border border-blue-200 hover:bg-blue-600 hover:text-white font-semibold transition"
+                                >
+                                    Record Payment
+                                </button>
+                                <button v-else class="text-sm text-slate-500 hover:text-slate-800 underline transition">
+                                    View Receipt
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p v-else class="text-slate-500 italic">No invoices have been generated for this matter yet.</p>
+            </div>
+
+            <!-- Total Unpaid Amount Card -->
+            <div class="bg-white p-6 rounded-lg shadow border-b-4 border-amber-500">
+                <h3 class="text-gray-500 text-sm font-semibold">Total Unpaid Amount ({{ matterCurrency }})</h3>
+                <p class="text-3xl font-bold text-gray-900 mt-1">
+                    {{ formatCurrency(matter.total_unpaid_amount) }}
+                </p>
+                <div class="mt-4">
+                    <Link :href="route('matters.statement', matter.id)" class="text-xs bg-amber-50 text-amber-700 px-3 py-1.5 rounded font-semibold border border-amber-200 hover:bg-amber-100 transition">
+                        View Statement of Account
+                    </Link>
+                </div>
+            </div>
+        </div>
     </AuthenticatedLayout>
-    
+
+    <!-- Record Payment Modal -->
     <div v-if="isPaymentModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 bg-opacity-50 backdrop-blur-sm transition-opacity">
-    
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-            
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-slate-800">
                     Payment for {{ selectedInvoice.invoice_number }}
@@ -440,9 +462,8 @@ const deleteMatter = () => {
             </div>
 
             <form @submit.prevent="submitPayment" class="p-6">
-                
                 <div class="mb-4">
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Amount Received (Php)</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Amount Received ({{ currencySymbol }} {{ matterCurrency }})</label>
                     <input type="number" step="0.01" v-model="form.amount" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" required>
                     <div v-if="form.errors.amount" class="text-red-500 text-xs mt-1">{{ form.errors.amount }}</div>
                 </div>
@@ -483,34 +504,33 @@ const deleteMatter = () => {
         </div>
     </div>
 
-        <TaskModal 
-            :show="isTaskModalOpen" 
-            :matter-id="matter.id"
-            :task="selectedTask"
-            @close="isTaskModalOpen = false" 
-        />
+    <TaskModal
+        :show="isTaskModalOpen"
+        :matter-id="matter.id"
+        :task="selectedTask"
+        @close="isTaskModalOpen = false"
+    />
 
-        <EventModal 
-            :show="isEventModalOpen" 
-            :matter-id="matter.id"
-            :event="selectedEvent"
-            @close="isEventModalOpen = false" 
-        />
+    <EventModal
+        :show="isEventModalOpen"
+        :matter-id="matter.id"
+        :event="selectedEvent"
+        @close="isEventModalOpen = false"
+    />
 
-        <TimeEntryModal 
-            :show="isTimeEntryModalOpen" 
-            :matter-id="matter.id"
-            :time-entry="selectedTimeEntry"
-            :tasks="matter.tasks"   
-            :events="matter.events"
-            @close="isTimeEntryModalOpen = false" 
-        />
+    <TimeEntryModal
+        :show="isTimeEntryModalOpen"
+        :matter-id="matter.id"
+        :time-entry="selectedTimeEntry"
+        :tasks="matter.tasks"
+        :events="matter.events"
+        @close="isTimeEntryModalOpen = false"
+    />
 
-        <DashboardMatterModal 
-            :show="isMatterModalOpen" 
-            :clients="clients"
-            :matter="matter"
-            @close="isMatterModalOpen = false" 
-        />
-
+    <DashboardMatterModal
+        :show="isMatterModalOpen"
+        :clients="clients"
+        :matter="matter"
+        @close="isMatterModalOpen = false"
+    />
 </template>

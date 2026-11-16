@@ -145,9 +145,9 @@
                         <td class="font-bold">{{ $inv->invoice_number }}</td>
                         <!-- Fixed: Using Carbon's format() instead of JS toLocaleDateString() -->
                         <td>{{ \Carbon\Carbon::parse($inv->issue_date)->format('M d, Y') }}</td>
-                        <td class="text-right">₱{{ number_format($inv->total_amount, 2) }}</td>
-                        <td class="text-right text-green">₱{{ number_format($inv->total_payments, 2) }}</td>
-                        <td class="text-right font-bold">₱{{ number_format($inv->balance_due, 2) }}</td>
+                        <td class="text-right">${{ number_format($inv->total_amount, 2) }}</td>
+                        <td class="text-right text-green">${{ number_format($inv->total_payments, 2) }}</td>
+                        <td class="text-right font-bold">${{ number_format($inv->balance_due, 2) }}</td>
                     </tr>
                 @empty
                     <tr>
@@ -161,7 +161,7 @@
         <div class="clearfix">
             <div class="summary-box">
                 <h3>Total Unpaid Amount</h3>
-                <p>₱{{ number_format($matter->total_unpaid_amount ?? 0, 2) }}</p>
+                <p>${{ number_format($matter->total_unpaid_amount ?? 0, 2) }}</p>
             </div>
         </div>
     </div>

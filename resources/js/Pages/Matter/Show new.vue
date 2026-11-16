@@ -199,7 +199,7 @@ const deleteEvent = (event) => {
                                     <div class="flex justify-between items-center mb-1">
                                         <span class="font-bold text-gray-800">{{ invoice.invoice_number }}</span>
                                         <span class="font-bold" :class="invoice.status === 'Paid' ? 'text-green-700' : 'text-gray-900'">
-                                            Php {{ parseFloat(invoice.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2 }) }}
+                                            $ {{ parseFloat(invoice.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2 }) }}
                                         </span>
                                     </div>
                                     

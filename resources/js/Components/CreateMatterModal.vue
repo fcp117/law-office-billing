@@ -1,6 +1,6 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
-import { watch } from 'vue';
+import { computed, watch } from 'vue';
 
 const props = defineProps({
     show: Boolean,
@@ -15,8 +15,11 @@ const form = useForm({
     authority: '',
     status: 'Active',
     billing_type: 'hourly',
+    currency: 'PHP',
     fixed_fee_amount: '',
 });
+
+const currencySymbol = computed(() => (form.currency === 'PHP' ? '₱' : '$'));
 
 watch(() => props.clientId, (newId) => {
     form.client_id = newId;
@@ -42,7 +45,6 @@ const closeModal = () => {
 <template>
     <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 bg-opacity-50 backdrop-blur-sm transition-opacity">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
-            
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-slate-800">
                     Create New Matter
@@ -68,19 +70,47 @@ const closeModal = () => {
                         <div v-if="form.errors.authority" class="text-red-500 text-xs mt-1">{{ form.errors.authority }}</div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Billing Type</label>
-                        <select v-model="form.billing_type" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                            <option value="hourly">Hourly</option>
-                            <option value="fixed_rate">Fixed Rate</option>
-                            <option value="administrative">Administrative (Internal)</option>
-                        </select>
-                        <div v-if="form.errors.billing_type" class="text-red-500 text-xs mt-1">{{ form.errors.billing_type }}</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Billing Type</label>
+                            <select v-model="form.billing_type" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                <option value="hourly">Hourly</option>
+                                <option value="fixed_rate">Fixed Rate</option>
+                                <option value="administrative">Administrative (Internal)</option>
+                            </select>
+                            <div v-if="form.errors.billing_type" class="text-red-500 text-xs mt-1">{{ form.errors.billing_type }}</div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Billing Currency</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button
+                                    v-for="curr in ['PHP', 'USD']"
+                                    :key="curr"
+                                    type="button"
+                                    @click="form.currency = curr"
+                                    :class="[
+                                        'rounded-md border px-3 py-2 text-sm font-medium transition',
+                                        form.currency === curr
+                                            ? 'border-blue-600 bg-blue-50 text-blue-700 ring-1 ring-blue-600'
+                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
+                                    ]"
+                                >
+                                    {{ curr === 'PHP' ? '₱ PHP' : '$ USD' }}
+                                </button>
+                            </div>
+                            <div v-if="form.errors.currency" class="text-red-500 text-xs mt-1">{{ form.errors.currency }}</div>
+                        </div>
                     </div>
 
                     <div v-if="form.billing_type === 'fixed_rate'">
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Fixed Fee Amount *</label>
-                        <input type="number" step="0.01" v-model="form.fixed_fee_amount" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Fixed Fee Amount ({{ form.currency }}) *</label>
+                        <div class="relative rounded-md shadow-sm">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <span class="text-slate-500 sm:text-sm">{{ currencySymbol }}</span>
+                            </div>
+                            <input type="number" step="0.01" v-model="form.fixed_fee_amount" class="w-full rounded-md border-slate-300 pl-7 shadow-sm" required>
+                        </div>
                         <div v-if="form.errors.fixed_fee_amount" class="text-red-500 text-xs mt-1">{{ form.errors.fixed_fee_amount }}</div>
                     </div>
 
@@ -105,7 +135,6 @@ const closeModal = () => {
                     <span v-else>Save Matter</span>
                 </button>
             </div>
-            
         </div>
     </div>
 </template>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use App\Models\Matter;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -12,22 +13,22 @@ class MatterController extends Controller
     public function show($id)
     {
         $user = auth()->user();
-    
+
         // Determine the base query: Partners see all matters, others only see assigned matters
         $query = $user->role === 'Partner' ? Matter::query() : $user->matters();
 
         // Eager load everything needed for the single case view
         $matter = $query->with([
-            'client', 
-            'users', 
-            'events', 
-            'tasks', 
+            'client',
+            'users',
+            'events',
+            'tasks',
             // Order time entries chronologically by start_time
             'timeEntries' => function ($query) {
-                $query->orderBy('start_time', 'asc'); 
+                $query->orderBy('start_time', 'asc');
             },
-            'timeEntries.user', 
-            'invoices.payments', 
+            'timeEntries.user',
+            'invoices.payments',
         ])->findOrFail($id);
 
         $matter->invoices->transform(function ($invoice) {
@@ -44,7 +45,7 @@ class MatterController extends Controller
 
         return Inertia::render('Matter/Show', [
             'matter' => $matter,
-            'clients' => $clients // Pass clients to the frontend
+            'clients' => $clients,
         ]);
     }
 
@@ -52,15 +53,15 @@ class MatterController extends Controller
     {
         // 1. Validate the incoming data from the Vue modal
         $validated = $request->validate([
-            'client_id' => 'required|exists:clients,id', // Ensures the client actually exists
+            'client_id' => 'required|exists:clients,id',
             'name' => 'required|string|max:255',
             'authority' => 'nullable|string|max:255',
             'status' => 'required|string|in:Active,Pending,On Hold,Completed',
             'billing_type' => 'required|string|in:hourly,fixed_rate,contingency,administrative',
+            'currency' => 'required|string|in:PHP,USD',
             'fixed_fee_amount' => 'nullable|numeric|min:0',
             'contingency_percentage' => 'nullable|numeric|min:0',
             'settlement_judgment' => 'nullable|numeric|min:0',
-
         ]);
 
         // 2. Create the new Matter in the database
@@ -69,10 +70,10 @@ class MatterController extends Controller
         $user = $request->user();
 
         $matter->users()->attach($user->id, [
-            'assignment_role' => $user->role
+            'assignment_role' => $user->role,
         ]);
 
-        // 3. Send the user back so Inertia can refresh the ClientShow page automatically
+        // 3. Send the user back so Inertia can refresh the page automatically
         return redirect()->back();
     }
 
@@ -88,7 +89,7 @@ class MatterController extends Controller
             return $invoice;
         })->filter(function ($invoice) {
             return $invoice->balance_due > 0;
-        })->values(); // Resets collection keys for clean JSON array serialization
+        })->values();
 
         // Update the relation on the matter model
         $matter->setRelation('invoices', $filteredInvoices);
@@ -97,7 +98,7 @@ class MatterController extends Controller
         $matter->total_unpaid_amount = $filteredInvoices->sum('balance_due');
 
         return Inertia::render('Matter/StatementOfAccount', [
-            'matter' => $matter
+            'matter' => $matter,
         ]);
     }
 
@@ -106,14 +107,14 @@ class MatterController extends Controller
         $user = auth()->user();
         $matter = $user->matters()->with(['client', 'invoices.payments'])->findOrFail($id);
 
-         // Transform invoices and filter out fully paid ones (balance_due <= 0)
+        // Transform invoices and filter out fully paid ones (balance_due <= 0)
         $filteredInvoices = $matter->invoices->map(function ($invoice) {
             $invoice->total_payments = $invoice->payments->sum('amount');
             $invoice->balance_due = max(0, $invoice->total_amount - $invoice->total_payments);
             return $invoice;
         })->filter(function ($invoice) {
             return $invoice->balance_due > 0;
-        })->values(); // Resets collection keys for clean JSON array serialization
+        })->values();
 
         // Update the relation on the matter model
         $matter->setRelation('invoices', $filteredInvoices);
@@ -134,6 +135,7 @@ class MatterController extends Controller
             'authority' => 'nullable|string|max:255',
             'status' => 'required|string|in:Active,Pending,On Hold,Completed',
             'billing_type' => 'required|string|in:hourly,fixed_rate,contingency,administrative',
+            'currency' => 'required|string|in:PHP,USD',
             'fixed_fee_amount' => 'nullable|numeric|min:0',
             'contingency_percentage' => 'nullable|numeric|min:0',
             'settlement_judgment' => 'nullable|numeric|min:0',

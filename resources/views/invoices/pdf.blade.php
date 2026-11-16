@@ -95,7 +95,7 @@
                         <td class="bold" style="width: 20%;">BILLING TYPE:</td>
                         <td style="width: 30%;">Fixed Rate</td>
                         <td class="bold" style="width: 20%;">FIXED FEE AMOUNT:</td>
-                        <td style="width: 30%;">&#8369;{{ number_format($invoice->matter->fixed_fee_amount, 2) }}</td>
+                        <td style="width: 30%;">${{ number_format($invoice->matter->fixed_fee_amount, 2) }}</td>
                     </tr>
                 @endif
                 
@@ -108,7 +108,7 @@
                     </tr>
                     <tr>
                         <td class="bold">SETTLEMENT / JUDGMENT:</td>
-                        <td colspan="3">&#8369;{{ number_format($invoice->matter->settlement_judgment, 2) }}</td>
+                        <td colspan="3">${{ number_format($invoice->matter->settlement_judgment, 2) }}</td>
                     </tr>
                 @endif
             </table>
@@ -138,8 +138,8 @@
                     <td>{{ $entry->description }}</td>
                     <td class="text-center">{{ number_format($entry->hours, 2) }}</td>
                     @if($isHourly)
-                        <td class="text-right">&#8369;{{ number_format($entry->hourly_rate, 2) }}</td>
-                        <td class="text-right bold">&#8369;{{ number_format($entry->amount, 2) }}</td>
+                        <td class="text-right">${{ number_format($entry->hourly_rate, 2) }}</td>
+                        <td class="text-right bold">${{ number_format($entry->amount, 2) }}</td>
                     @endif
                 </tr>
             @endforeach
@@ -151,15 +151,15 @@
         <table class="totals-table">
             <tr>
                 <td><strong>Our Fees:</strong></td>
-                <td class="text-right bold">&#8369;{{ number_format($ourFees, 2) }}</td>
+                <td class="text-right bold">${{ number_format($ourFees, 2) }}</td>
             </tr>
             <tr>
                 <td><strong>+ 12% VAT:</strong></td>
-                <td class="text-right">&#8369;{{ number_format($vat, 2) }}</td>
+                <td class="text-right">${{ number_format($vat, 2) }}</td>
             </tr>
             <tr style="background-color: #f1f5f9;">
                 <td><strong>Total:</strong></td>
-                <td class="text-right bold" style="font-size: 13px; color: #0f172a;">&#8369;{{ number_format($invoice->total_amount, 2) }}</td>
+                <td class="text-right bold" style="font-size: 13px; color: #0f172a;">${{ number_format($invoice->total_amount, 2) }}</td>
             </tr>
         </table>
     </div>

@@ -9,9 +9,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LawyerRate extends Model
 {
+    public const CURRENCIES = ['USD', 'PHP'];
+
     protected $fillable = [
         'user_id',
         'rank',
+        'currency',
         'hourly_rate',
         'effective_from',
         'created_by',
@@ -33,13 +36,18 @@ class LawyerRate extends Model
     }
 
     /**
-     * Scope to find the applicable rate record for a lawyer on a given material date.
+     * Scope to find the applicable rate record for a lawyer, currency, and material date.
      */
-    public function scopeForLawyerOnDate(Builder $query, int $userId, string|\DateTimeInterface $materialDate): Builder
-    {
+    public function scopeForLawyerOnDate(
+        Builder $query,
+        int $userId,
+        string|\DateTimeInterface $materialDate,
+        string $currency = 'USD'
+    ): Builder {
         $date = Carbon::parse($materialDate)->toDateString();
 
         return $query->where('user_id', $userId)
+            ->where('currency', strtoupper($currency))
             ->whereDate('effective_from', '<=', $date)
             ->orderByDesc('effective_from')
             ->orderByDesc('id');
@@ -48,9 +56,12 @@ class LawyerRate extends Model
     /**
      * Convenience helper returning the numeric hourly rate (or null if none exists).
      */
-    public static function getRateFor(int $userId, string|\DateTimeInterface $materialDate): ?float
-    {
-        $rate = static::forLawyerOnDate($userId, $materialDate)->value('hourly_rate');
+    public static function getRateFor(
+        int $userId,
+        string|\DateTimeInterface $materialDate,
+        string $currency = 'USD'
+    ): ?float {
+        $rate = static::forLawyerOnDate($userId, $materialDate, $currency)->value('hourly_rate');
 
         return $rate !== null ? (float) $rate : null;
     }
