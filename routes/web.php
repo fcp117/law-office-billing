@@ -13,6 +13,7 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\TimeEntryController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LawyerController;
+use App\Http\Controllers\LawyerRateController;
 /* use App\Http\Controllers\AdminController; */
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -102,5 +103,11 @@ Route::get('/invoices/{invoice}/ledes', [InvoiceController::class, 'downloadLede
 
 Route::get('/matters/{matter}/statement', [MatterController::class, 'statement'])->name('matters.statement');
 Route::get('/matters/{matter}/statement/download', [MatterController::class, 'downloadStatementPdf'])->name('matters.statement.download');
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/users/{user}/rates', [LawyerRateController::class, 'index'])->name('users.rates.index');
+    Route::post('/users/{user}/rates', [LawyerRateController::class, 'store'])->name('users.rates.store');
+    Route::delete('/lawyer-rates/{lawyerRate}', [LawyerRateController::class, 'destroy'])->name('lawyer-rates.destroy');
+});
 
 require __DIR__.'/auth.php';

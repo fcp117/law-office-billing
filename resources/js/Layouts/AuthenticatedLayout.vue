@@ -73,38 +73,55 @@ const navigation = [
                     </Link>
                 </div>
 
+                <!-- Desktop sidebar <nav> -->
                 <nav class="flex-1 space-y-1 px-3 py-5" aria-label="Main navigation">
                     <template v-for="item in navigation" :key="item.label">
+                        <Link
+                            v-if="route().has(item.route)"
+                            :href="route(item.route)"
+                            class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition"
+                            :class="route().current(item.active)
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'text-gray-100 hover:bg-gray-50 hover:text-gray-900'"
+                        >
+                            <!-- existing icons & label -->
+                            <svg v-if="item.icon === 'dashboard'" class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <rect x="3" y="3" width="7" height="7" rx="1" stroke-width="1.8" />
+                                <rect x="14" y="3" width="7" height="7" rx="1" stroke-width="1.8" />
+                                <rect x="3" y="14" width="7" height="7" rx="1" stroke-width="1.8" />
+                                <rect x="14" y="14" width="7" height="7" rx="1" stroke-width="1.8" />
+                            </svg>
+                            <svg v-else-if="item.icon === 'matters'" class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7.5A1.5 1.5 0 0 1 4.5 6H10l2 2h7.5A1.5 1.5 0 0 1 21 9.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z" />
+                            </svg>
+                            <svg v-else-if="item.icon === 'clients'" class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <circle cx="9" cy="8" r="3" stroke-width="1.8" />
+                                <path stroke-linecap="round" stroke-width="1.8" d="M3 19v-1a6 6 0 0 1 12 0v1M16 5.5a3 3 0 0 1 0 5.8M18 14a4 4 0 0 1 3 3.9V19" />
+                            </svg>
+                            <svg v-else-if="item.icon === 'lawyers'" class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 3v18M5 6h14M7 6l-4 7h8L7 6zm10 0-4 7h8l-4-7zM7 21h10" />
+                            </svg>
+                            <svg v-else class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 3h9l4 4v14H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM14 3v5h5M8 13h8M8 17h8" />
+                            </svg>
+                            <span>{{ item.label }}</span>
+                        </Link>
+                    </template>
+
+                    <!-- Billing Rates link (outside the v-for loop, matching sidebar <Link> style) -->
                     <Link
-                        v-if="route().has(item.route)"
-                        :href="route(item.route)"
+                        v-if="$page.props.auth?.can?.manageRates && $page.props.auth?.user && route().has('users.rates.index')"
+                        :href="route('users.rates.index', $page.props.auth.user.id)"
                         class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition"
-                        :class="route().current(item.active)
+                        :class="route().current('users.rates.*')
                             ? 'bg-blue-50 text-blue-700'
                             : 'text-gray-100 hover:bg-gray-50 hover:text-gray-900'"
                     >
-                        <svg v-if="item.icon === 'dashboard'" class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <rect x="3" y="3" width="7" height="7" rx="1" stroke-width="1.8" />
-                            <rect x="14" y="3" width="7" height="7" rx="1" stroke-width="1.8" />
-                            <rect x="3" y="14" width="7" height="7" rx="1" stroke-width="1.8" />
-                            <rect x="14" y="14" width="7" height="7" rx="1" stroke-width="1.8" />
+                        <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                         </svg>
-                        <svg v-else-if="item.icon === 'matters'" class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7.5A1.5 1.5 0 0 1 4.5 6H10l2 2h7.5A1.5 1.5 0 0 1 21 9.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z" />
-                        </svg>
-                        <svg v-else-if="item.icon === 'clients'" class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <circle cx="9" cy="8" r="3" stroke-width="1.8" />
-                            <path stroke-linecap="round" stroke-width="1.8" d="M3 19v-1a6 6 0 0 1 12 0v1M16 5.5a3 3 0 0 1 0 5.8M18 14a4 4 0 0 1 3 3.9V19" />
-                        </svg>
-                        <svg v-else-if="item.icon === 'lawyers'" class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 3v18M5 6h14M7 6l-4 7h8L7 6zm10 0-4 7h8l-4-7zM7 21h10" />
-                        </svg>
-                        <svg v-else class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 3h9l4 4v14H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM14 3v5h5M8 13h8M8 17h8" />
-                        </svg>
-                        <span>{{ item.label }}</span>
+                        <span>Billing Rates</span>
                     </Link>
-                    </template>
                 </nav>
 
                 <!-- <div class="border-t border-gray-100 p-3">
@@ -153,18 +170,30 @@ const navigation = [
 
                     <nav class="flex-1 space-y-1 px-3 py-4" aria-label="Mobile navigation">
                         <template v-for="item in navigation" :key="item.label">
+                            <Link
+                                v-if="route().has(item.route)"
+                                :href="route(item.route)"
+                                @click="showingNavigationDropdown = false"
+                                class="block rounded-lg px-3 py-2.5 text-sm font-medium"
+                                :class="route().current(item.active)
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+                            >
+                                {{ item.label }}
+                            </Link>
+                        </template>
+
                         <Link
-                            v-if="route().has(item.route)"
-                            :href="route(item.route)"
+                            v-if="$page.props.auth?.can?.manageRates && $page.props.auth?.user && route().has('users.rates.index')"
+                            :href="route('users.rates.index', $page.props.auth.user.id)"
                             @click="showingNavigationDropdown = false"
                             class="block rounded-lg px-3 py-2.5 text-sm font-medium"
-                            :class="route().current(item.active)
+                            :class="route().current('users.rates.*')
                                 ? 'bg-blue-50 text-blue-700'
                                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
                         >
-                            {{ item.label }}
+                            Billing Rates
                         </Link>
-                        </template>
                     </nav>
                 </aside>
             </div>

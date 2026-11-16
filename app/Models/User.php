@@ -48,4 +48,17 @@ class User extends Authenticatable
         return $this->belongsToMany(Event::class)
                     ->withTimestamps();
     }
+
+    public function rates() 
+    { 
+        return $this->hasMany(LawyerRate::class);
+    }
+    
+    public function currentRate() 
+    { 
+        return $this->hasOne(LawyerRate::class)
+                    ->whereDate('effective_from', '<=', now())
+                    ->latestOfMany('effective_from'); 
+    }
+
 }

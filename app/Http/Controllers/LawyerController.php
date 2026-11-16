@@ -13,6 +13,7 @@ class LawyerController extends Controller
         $search = $request->input('search');
 
         $lawyers = User::query()
+            ->with('currentRate')
             ->when($search, function ($query, $search) {
                 $query->where('name', 'like', "%{$search}%")
                       ->orWhere('email', 'like', "%{$search}%")
