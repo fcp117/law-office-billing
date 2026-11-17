@@ -103,34 +103,34 @@ const getCurrencyMetric = (metric, currency) => {
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex justify-between items-center">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            <div class="flex flex-wrap justify-between items-center gap-3">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight break-words">
                     {{ targetUser.name }}'s Dashboard
                 </h2>
                 <Link
                     :href="route('lawyers')"
-                    class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded font-semibold transition border"
+                    class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded font-semibold transition border shrink-0"
                 >
                     &larr; Back to Lawyers Directory
                 </Link>
             </div>
         </template>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="py-6 sm:py-12">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
                 <!-- Firm-wide Financials Banner (Partner only) -->
                 <div
                     v-if="authUser?.role === 'Partner' || authUser?.role === 'Admin'"
-                    class="bg-blue-50 border border-blue-200 rounded-lg p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center"
+                    class="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
                 >
-                    <div class="mb-4 sm:mb-0">
+                    <div>
                         <h3 class="text-lg font-bold text-blue-900">Firm-wide Financials</h3>
                         <p class="text-sm text-blue-700 mt-1">View total revenue, collections, and aging accounts receivable.</p>
                     </div>
 
                     <Link
                         :href="route('dashboard.overview')"
-                        class="inline-flex items-center px-4 py-2 bg-blue-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-800 transition shadow"
+                        class="inline-flex items-center px-4 py-2 bg-blue-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-800 transition shadow shrink-0"
                     >
                         View Firm Overview
                     </Link>
@@ -140,32 +140,32 @@ const getCurrencyMetric = (metric, currency) => {
                 <div v-if="canViewKpis" class="space-y-6">
                     <!-- Aggregate Totals -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-white p-6 rounded-lg shadow flex justify-between items-start border-b-4 border-gray-800">
-                            <div>
+                        <div class="bg-white p-4 sm:p-6 rounded-lg shadow flex justify-between items-start gap-3 border-b-4 border-gray-800 min-w-0">
+                            <div class="min-w-0">
                                 <h3 class="text-gray-500 text-sm font-semibold">Total Billable Hours (This Month)</h3>
-                                <p class="text-3xl font-bold text-gray-900 mt-1">{{ Number(kpis?.aggregate?.hours || 0).toFixed(2) }}</p>
+                                <p class="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{{ Number(kpis?.aggregate?.hours || 0).toFixed(2) }}</p>
                             </div>
                             <button
                                 @click="openTimeEntryModal()"
-                                class="bg-purple-100 text-purple-700 px-3 py-1.5 rounded text-sm font-semibold hover:bg-purple-200 transition border border-purple-200"
+                                class="bg-purple-100 text-purple-700 px-3 py-1.5 rounded text-sm font-semibold hover:bg-purple-200 transition border border-purple-200 shrink-0"
                             >
                                 + Log Time
                             </button>
                         </div>
 
                         <!-- Total Billed Amount (PHP & USD) -->
-                        <div class="bg-white p-6 rounded-lg shadow border-b-4 border-green-500">
+                        <div class="bg-white p-4 sm:p-6 rounded-lg shadow border-b-4 border-green-500 min-w-0">
                             <h3 class="text-gray-500 text-sm font-semibold">Total Billed Amount</h3>
                             <div class="mt-2 space-y-1">
-                                <div class="flex items-baseline justify-between">
-                                    <span class="text-xs font-semibold uppercase tracking-wider text-emerald-700">PHP</span>
-                                    <span class="text-2xl font-bold text-gray-900">
+                                <div class="flex items-baseline justify-between gap-2">
+                                    <span class="text-xs font-semibold uppercase tracking-wider text-emerald-700 shrink-0">PHP</span>
+                                    <span class="text-xl sm:text-2xl font-bold text-gray-900 truncate">
                                         {{ formatCurrency(getCurrencyMetric(kpis?.aggregate?.billed, 'PHP'), 'PHP') }}
                                     </span>
                                 </div>
-                                <div class="flex items-baseline justify-between border-t border-gray-100 pt-1">
-                                    <span class="text-xs font-semibold uppercase tracking-wider text-indigo-700">USD</span>
-                                    <span class="text-2xl font-bold text-gray-900">
+                                <div class="flex items-baseline justify-between gap-2 border-t border-gray-100 pt-1">
+                                    <span class="text-xs font-semibold uppercase tracking-wider text-indigo-700 shrink-0">USD</span>
+                                    <span class="text-xl sm:text-2xl font-bold text-gray-900 truncate">
                                         {{ formatCurrency(getCurrencyMetric(kpis?.aggregate?.billed, 'USD'), 'USD') }}
                                     </span>
                                 </div>
@@ -173,18 +173,18 @@ const getCurrencyMetric = (metric, currency) => {
                         </div>
 
                         <!-- Total Unbilled Amount (PHP & USD) -->
-                        <div class="bg-white p-6 rounded-lg shadow border-b-4 border-blue-500">
+                        <div class="bg-white p-4 sm:p-6 rounded-lg shadow border-b-4 border-blue-500 min-w-0">
                             <h3 class="text-gray-500 text-sm font-semibold">Total Unbilled Amount</h3>
                             <div class="mt-2 space-y-1">
-                                <div class="flex items-baseline justify-between">
-                                    <span class="text-xs font-semibold uppercase tracking-wider text-emerald-700">PHP</span>
-                                    <span class="text-2xl font-bold text-gray-900">
+                                <div class="flex items-baseline justify-between gap-2">
+                                    <span class="text-xs font-semibold uppercase tracking-wider text-emerald-700 shrink-0">PHP</span>
+                                    <span class="text-xl sm:text-2xl font-bold text-gray-900 truncate">
                                         {{ formatCurrency(getCurrencyMetric(kpis?.aggregate?.unbilled, 'PHP'), 'PHP') }}
                                     </span>
                                 </div>
-                                <div class="flex items-baseline justify-between border-t border-gray-100 pt-1">
-                                    <span class="text-xs font-semibold uppercase tracking-wider text-indigo-700">USD</span>
-                                    <span class="text-2xl font-bold text-gray-900">
+                                <div class="flex items-baseline justify-between gap-2 border-t border-gray-100 pt-1">
+                                    <span class="text-xs font-semibold uppercase tracking-wider text-indigo-700 shrink-0">USD</span>
+                                    <span class="text-xl sm:text-2xl font-bold text-gray-900 truncate">
                                         {{ formatCurrency(getCurrencyMetric(kpis?.aggregate?.unbilled, 'USD'), 'USD') }}
                                     </span>
                                 </div>
@@ -193,11 +193,11 @@ const getCurrencyMetric = (metric, currency) => {
                     </div>
 
                     <!-- Breakdown by Billing Type -->
-                    <div v-if="kpis?.by_billing_type && Object.keys(kpis.by_billing_type).length > 0" class="bg-white p-6 rounded-lg shadow">
+                    <div v-if="kpis?.by_billing_type && Object.keys(kpis.by_billing_type).length > 0" class="bg-white p-4 sm:p-6 rounded-lg shadow">
                         <h3 class="text-lg font-bold border-b pb-2 mb-4">Breakdown by Billing Type</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div v-for="(data, type) in kpis.by_billing_type" :key="type" class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                <h4 class="font-bold text-gray-800 mb-3">{{ formatString(type) }}</h4>
+                            <div v-for="(data, type) in kpis.by_billing_type" :key="type" class="bg-gray-50 p-4 rounded-lg border border-gray-200 min-w-0">
+                                <h4 class="font-bold text-gray-800 mb-3 break-words">{{ formatString(type) }}</h4>
                                 <div class="space-y-2 text-sm">
                                     <div class="flex justify-between pb-1.5 border-b border-gray-200">
                                         <span class="text-gray-500 font-medium">Hours</span>
@@ -207,15 +207,15 @@ const getCurrencyMetric = (metric, currency) => {
                                     <!-- Billed PHP & USD -->
                                     <div>
                                         <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Billed</div>
-                                        <div class="flex justify-between">
+                                        <div class="flex justify-between gap-2">
                                             <span class="text-xs text-gray-500">PHP</span>
-                                            <span class="font-bold text-green-700">
+                                            <span class="font-bold text-green-700 truncate">
                                                 {{ formatCurrency(getCurrencyMetric(data.billed, 'PHP'), 'PHP') }}
                                             </span>
                                         </div>
-                                        <div class="flex justify-between">
+                                        <div class="flex justify-between gap-2">
                                             <span class="text-xs text-gray-500">USD</span>
-                                            <span class="font-bold text-green-700">
+                                            <span class="font-bold text-green-700 truncate">
                                                 {{ formatCurrency(getCurrencyMetric(data.billed, 'USD'), 'USD') }}
                                             </span>
                                         </div>
@@ -224,15 +224,15 @@ const getCurrencyMetric = (metric, currency) => {
                                     <!-- Unbilled PHP & USD -->
                                     <div class="pt-1.5 border-t border-gray-200">
                                         <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Unbilled</div>
-                                        <div class="flex justify-between">
+                                        <div class="flex justify-between gap-2">
                                             <span class="text-xs text-gray-500">PHP</span>
-                                            <span class="font-bold text-blue-700">
+                                            <span class="font-bold text-blue-700 truncate">
                                                 {{ formatCurrency(getCurrencyMetric(data.unbilled, 'PHP'), 'PHP') }}
                                             </span>
                                         </div>
-                                        <div class="flex justify-between">
+                                        <div class="flex justify-between gap-2">
                                             <span class="text-xs text-gray-500">USD</span>
-                                            <span class="font-bold text-blue-700">
+                                            <span class="font-bold text-blue-700 truncate">
                                                 {{ formatCurrency(getCurrencyMetric(data.unbilled, 'USD'), 'USD') }}
                                             </span>
                                         </div>
@@ -245,28 +245,28 @@ const getCurrencyMetric = (metric, currency) => {
 
                 <!-- Main Content Grid -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-2 space-y-6">
+                    <div class="lg:col-span-2 space-y-6 min-w-0">
                         <!-- Upcoming Events -->
-                        <div class="bg-white p-6 rounded-lg shadow">
-                            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <div class="bg-white p-4 sm:p-6 rounded-lg shadow min-w-0">
+                            <div class="flex justify-between items-center gap-2 mb-4 border-b pb-2">
                                 <h2 class="text-lg font-bold">Upcoming Events</h2>
                                 <button
                                     @click="openEventModal()"
-                                    class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200"
+                                    class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200 shrink-0"
                                 >
                                     + Add Event
                                 </button>
                             </div>
 
-                            <div class="max-h-80 overflow-y-auto pr-2">
+                            <div class="max-h-80 overflow-y-auto pr-1 sm:pr-2">
                                 <ul class="space-y-4" v-if="events && events.length > 0">
                                     <li v-for="event in events" :key="event.id" class="bg-red-50 p-3 rounded-lg border border-red-100">
-                                        <div class="flex justify-between items-start">
-                                            <div>
-                                                <span class="font-bold text-gray-900 leading-tight">{{ event.title }}</span>
-                                                <div class="text-sm text-gray-600 font-medium">{{ event.matter?.name }}</div>
+                                        <div class="flex flex-col sm:flex-row justify-between items-start gap-2">
+                                            <div class="min-w-0 flex-1 break-words">
+                                                <div class="font-bold text-gray-900 leading-tight">{{ event.title }}</div>
+                                                <div class="text-sm text-gray-600 font-medium mt-0.5">{{ event.matter?.name }}</div>
                                             </div>
-                                            <span class="text-xs font-bold text-red-700 bg-red-200 px-2 py-0.5 rounded shrink-0 ml-2">
+                                            <span class="text-xs font-bold text-red-700 bg-red-200 px-2 py-0.5 rounded shrink-0">
                                                 {{ new Date(event.scheduled_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) }}
                                             </span>
                                         </div>
@@ -281,34 +281,32 @@ const getCurrencyMetric = (metric, currency) => {
                         </div>
 
                         <!-- Pending Tasks -->
-                        <div class="bg-white p-6 rounded-lg shadow">
-                            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <div class="bg-white p-4 sm:p-6 rounded-lg shadow min-w-0">
+                            <div class="flex justify-between items-center gap-2 mb-4 border-b pb-2">
                                 <h2 class="text-lg font-bold">Pending Tasks</h2>
                                 <button
                                     @click="openTaskModal()"
-                                    class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200"
+                                    class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200 shrink-0"
                                 >
                                     + Add Task
                                 </button>
                             </div>
 
-                            <div class="max-h-80 overflow-y-auto pr-2">
+                            <div class="max-h-80 overflow-y-auto pr-1 sm:pr-2">
                                 <ul class="space-y-4" v-if="tasks && tasks.length > 0">
-                                    <li v-for="task in tasks" :key="task.id" class="flex items-start space-x-3 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                        <div class="w-full">
-                                            <div class="flex justify-between items-start">
-                                                <div>
-                                                    <span class="font-bold text-gray-900 leading-tight">{{ task.title }}</span>
-                                                    <div class="text-sm text-gray-600 font-medium">{{ task.matter?.name }}</div>
-                                                </div>
-                                                <span class="text-xs font-medium text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded border border-yellow-200 shrink-0 ml-2">
-                                                    Due: {{ new Date(task.deadline).toLocaleDateString() }}
-                                                </span>
+                                    <li v-for="task in tasks" :key="task.id" class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                        <div class="flex flex-col sm:flex-row justify-between items-start gap-2">
+                                            <div class="min-w-0 flex-1 break-words">
+                                                <div class="font-bold text-gray-900 leading-tight">{{ task.title }}</div>
+                                                <div class="text-sm text-gray-600 font-medium mt-0.5">{{ task.matter?.name }}</div>
                                             </div>
-                                            <div class="flex space-x-3 mt-2 text-xs">
-                                                <button @click="openTaskModal(task)" class="text-blue-600 hover:underline font-medium">Edit</button>
-                                                <button @click="deleteTask(task)" class="text-red-500 hover:underline font-medium">Delete</button>
-                                            </div>
+                                            <span class="text-xs font-medium text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded border border-yellow-200 shrink-0">
+                                                Due: {{ new Date(task.deadline).toLocaleDateString() }}
+                                            </span>
+                                        </div>
+                                        <div class="flex space-x-3 mt-2 text-xs">
+                                            <button @click="openTaskModal(task)" class="text-blue-600 hover:underline font-medium">Edit</button>
+                                            <button @click="deleteTask(task)" class="text-red-500 hover:underline font-medium">Delete</button>
                                         </div>
                                     </li>
                                 </ul>
@@ -318,25 +316,27 @@ const getCurrencyMetric = (metric, currency) => {
                     </div>
 
                     <!-- Active Matters -->
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <div class="bg-white p-4 sm:p-6 rounded-lg shadow min-w-0">
+                        <div class="flex justify-between items-center gap-2 mb-4 border-b pb-2">
                             <h2 class="text-lg font-bold">Active Matters</h2>
                             <button
                                 @click="isMatterModalOpen = true"
-                                class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200"
+                                class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200 shrink-0"
                             >
                                 + Add Matter
                             </button>
                         </div>
-                        <div class="max-h-[46rem] overflow-y-auto pr-2">
+                        <div class="max-h-[46rem] overflow-y-auto pr-1 sm:pr-2">
                             <ul class="space-y-2" v-if="matters && matters.length > 0">
                                 <li v-for="matter in matters" :key="matter.id">
                                     <Link
                                         :href="route('matters.show', matter.id)"
                                         class="block p-3 rounded hover:bg-gray-50 transition border border-transparent hover:border-gray-200"
                                     >
-                                        <div class="flex items-center justify-between gap-2">
-                                            <span class="font-semibold text-blue-600">{{ matter.name }}</span>
+                                        <div class="flex items-start justify-between gap-2">
+                                            <span class="font-semibold text-blue-600 min-w-0 flex-1 break-words leading-snug">
+                                                {{ matter.name }}
+                                            </span>
                                             <span
                                                 :class="[
                                                     'shrink-0 px-1.5 py-0.5 rounded text-[11px] font-semibold',
@@ -348,15 +348,15 @@ const getCurrencyMetric = (metric, currency) => {
                                                 {{ matter.currency || 'PHP' }}
                                             </span>
                                         </div>
-                                        <div class="font-semibold text-gray-600">{{ matter.client?.name }}</div>
-                                        <div class="text-xs text-gray-500 mt-2 flex justify-between items-center">
-                                            <div class="flex items-center space-x-2">
-                                                <span>{{ matter.authority }}</span>
-                                                <span v-if="matter.billing_type" class="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-medium">
+                                        <div class="font-semibold text-gray-600 text-sm break-words mt-0.5">{{ matter.client?.name }}</div>
+                                        <div class="text-xs text-gray-500 mt-2 flex flex-wrap justify-between items-center gap-2">
+                                            <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+                                                <span class="break-words">{{ matter.authority }}</span>
+                                                <span v-if="matter.billing_type" class="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-medium shrink-0">
                                                     {{ formatString(matter.billing_type) }}
                                                 </span>
                                             </div>
-                                            <span class="text-green-600 font-semibold">{{ matter.status }}</span>
+                                            <span class="text-green-600 font-semibold shrink-0">{{ matter.status }}</span>
                                         </div>
                                     </Link>
                                 </li>

@@ -171,12 +171,12 @@ const getInitials = (name) => {
                                     </div>
 
                                     <div class="px-6 py-3 bg-slate-50 border-t border-b border-gray-100 text-sm space-y-1">
-                                        <div class="flex justify-between">
+                                        <!-- <div class="flex justify-between">
                                             <span class="text-gray-500">Standard Hourly Rate:</span>
                                             <span class="font-semibold text-gray-800">
                                                 {{ lawyer.standard_hourly_rate ? `Php ${parseFloat(lawyer.standard_hourly_rate).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'Not Set' }}
                                             </span>
-                                        </div>
+                                        </div> -->
                                         <div class="flex justify-between">
                                             <span class="text-gray-500">Account Status:</span>
                                             <span class="font-medium text-green-600">Active</span>
@@ -231,12 +231,12 @@ const getInitials = (name) => {
                                     </div>
 
                                     <div class="px-6 py-3 bg-slate-50 border-t border-b border-gray-100 text-sm space-y-1">
-                                        <div class="flex justify-between">
+                                        <!-- <div class="flex justify-between">
                                             <span class="text-gray-500">Standard Hourly Rate:</span>
                                             <span class="font-semibold text-gray-800">
                                                 {{ lawyer.standard_hourly_rate ? `Php ${parseFloat(lawyer.standard_hourly_rate).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'Not Set' }}
                                             </span>
-                                        </div>
+                                        </div> -->
                                         <div class="flex justify-between">
                                             <span class="text-gray-500">Account Status:</span>
                                             <span class="font-medium text-green-600">Active</span>

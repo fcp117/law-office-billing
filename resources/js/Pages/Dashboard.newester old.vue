@@ -1,0 +1,377 @@
+<script setup>
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+
+// Import Dashboard Modals
+import DashboardTaskModal from '@/Components/DashboardTaskModal.vue';
+import DashboardEventModal from '@/Components/DashboardEventModal.vue';
+import DashboardMatterModal from '@/Components/DashboardMatterModal.vue';
+import DashboardTimeEntryModal from '@/Components/DashboardTimeEntryModal.vue';
+
+const props = defineProps({
+    targetUser: Object,
+    kpis: Object,
+    events: Array,
+    tasks: Array,
+    matters: Array,
+    clients: Array,
+});
+
+const formatString = (text) => {
+    if (!text) return '';
+    return text
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const page = usePage();
+const authUser = computed(() => page.props.auth.user);
+
+// Condition: Visible only to the dashboard owner or to a Partner / Admin
+const canViewKpis = computed(() => {
+    return (
+        authUser.value.id === props.targetUser.id ||
+        authUser.value.role === 'Partner' ||
+        authUser.value.role === 'Admin'
+    );
+});
+
+// --- Tasks Logic ---
+const isTaskModalOpen = ref(false);
+const selectedTask = ref(null);
+
+const openTaskModal = (task = null) => {
+    selectedTask.value = task;
+    isTaskModalOpen.value = true;
+};
+
+const deleteTask = (task) => {
+    if (confirm(`Delete task "${task.title}"?`)) {
+        router.delete(route('tasks.destroy', task.id), { preserveScroll: true });
+    }
+};
+
+// --- Events Logic ---
+const isEventModalOpen = ref(false);
+const selectedEvent = ref(null);
+
+const openEventModal = (event = null) => {
+    selectedEvent.value = event;
+    isEventModalOpen.value = true;
+};
+
+const deleteEvent = (event) => {
+    if (confirm(`Delete event "${event.title}"?`)) {
+        router.delete(route('events.destroy', event.id), { preserveScroll: true });
+    }
+};
+
+const isMatterModalOpen = ref(false);
+
+const isTimeEntryModalOpen = ref(false);
+const selectedTimeEntry = ref(null);
+
+const openTimeEntryModal = (entry = null) => {
+    selectedTimeEntry.value = entry;
+    isTimeEntryModalOpen.value = true;
+};
+
+// Currency formatter supporting both PHP (₱) and USD ($)
+const formatCurrency = (amount, currency = 'PHP') => {
+    const symbol = currency === 'USD' ? '$' : '₱';
+    return (
+        symbol +
+        Number(amount || 0).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        })
+    );
+};
+
+// Helper to safely extract PHP or USD amount from either { PHP, USD } object or legacy number
+const getCurrencyMetric = (metric, currency) => {
+    if (metric && typeof metric === 'object') {
+        return Number(metric[currency] || 0);
+    }
+    return currency === 'PHP' ? Number(metric || 0) : 0;
+};
+</script>
+
+<template>
+    <Head :title="`${targetUser.name}'s Dashboard`" />
+
+    <AuthenticatedLayout>
+        <template #header>
+            <div class="flex justify-between items-center">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    {{ targetUser.name }}'s Dashboard
+                </h2>
+                <Link
+                    :href="route('lawyers')"
+                    class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded font-semibold transition border"
+                >
+                    &larr; Back to Lawyers Directory
+                </Link>
+            </div>
+        </template>
+
+        <div class="py-12">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+                <!-- Firm-wide Financials Banner (Partner only) -->
+                <div
+                    v-if="authUser?.role === 'Partner' || authUser?.role === 'Admin'"
+                    class="bg-blue-50 border border-blue-200 rounded-lg p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center"
+                >
+                    <div class="mb-4 sm:mb-0">
+                        <h3 class="text-lg font-bold text-blue-900">Firm-wide Financials</h3>
+                        <p class="text-sm text-blue-700 mt-1">View total revenue, collections, and aging accounts receivable.</p>
+                    </div>
+
+                    <Link
+                        :href="route('dashboard.overview')"
+                        class="inline-flex items-center px-4 py-2 bg-blue-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-800 transition shadow"
+                    >
+                        View Firm Overview
+                    </Link>
+                </div>
+
+                <!-- KPI Section: Visible ONLY to Dashboard Owner or Partner/Admin -->
+                <div v-if="canViewKpis" class="space-y-6">
+                    <!-- Aggregate Totals -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow flex justify-between items-start border-b-4 border-gray-800">
+                            <div>
+                                <h3 class="text-gray-500 text-sm font-semibold">Total Billable Hours (This Month)</h3>
+                                <p class="text-3xl font-bold text-gray-900 mt-1">{{ Number(kpis?.aggregate?.hours || 0).toFixed(2) }}</p>
+                            </div>
+                            <button
+                                @click="openTimeEntryModal()"
+                                class="bg-purple-100 text-purple-700 px-3 py-1.5 rounded text-sm font-semibold hover:bg-purple-200 transition border border-purple-200"
+                            >
+                                + Log Time
+                            </button>
+                        </div>
+
+                        <!-- Total Billed Amount (PHP & USD) -->
+                        <div class="bg-white p-6 rounded-lg shadow border-b-4 border-green-500">
+                            <h3 class="text-gray-500 text-sm font-semibold">Total Billed Amount</h3>
+                            <div class="mt-2 space-y-1">
+                                <div class="flex items-baseline justify-between">
+                                    <span class="text-xs font-semibold uppercase tracking-wider text-emerald-700">PHP</span>
+                                    <span class="text-2xl font-bold text-gray-900">
+                                        {{ formatCurrency(getCurrencyMetric(kpis?.aggregate?.billed, 'PHP'), 'PHP') }}
+                                    </span>
+                                </div>
+                                <div class="flex items-baseline justify-between border-t border-gray-100 pt-1">
+                                    <span class="text-xs font-semibold uppercase tracking-wider text-indigo-700">USD</span>
+                                    <span class="text-2xl font-bold text-gray-900">
+                                        {{ formatCurrency(getCurrencyMetric(kpis?.aggregate?.billed, 'USD'), 'USD') }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total Unbilled Amount (PHP & USD) -->
+                        <div class="bg-white p-6 rounded-lg shadow border-b-4 border-blue-500">
+                            <h3 class="text-gray-500 text-sm font-semibold">Total Unbilled Amount</h3>
+                            <div class="mt-2 space-y-1">
+                                <div class="flex items-baseline justify-between">
+                                    <span class="text-xs font-semibold uppercase tracking-wider text-emerald-700">PHP</span>
+                                    <span class="text-2xl font-bold text-gray-900">
+                                        {{ formatCurrency(getCurrencyMetric(kpis?.aggregate?.unbilled, 'PHP'), 'PHP') }}
+                                    </span>
+                                </div>
+                                <div class="flex items-baseline justify-between border-t border-gray-100 pt-1">
+                                    <span class="text-xs font-semibold uppercase tracking-wider text-indigo-700">USD</span>
+                                    <span class="text-2xl font-bold text-gray-900">
+                                        {{ formatCurrency(getCurrencyMetric(kpis?.aggregate?.unbilled, 'USD'), 'USD') }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Breakdown by Billing Type -->
+                    <div v-if="kpis?.by_billing_type && Object.keys(kpis.by_billing_type).length > 0" class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-bold border-b pb-2 mb-4">Breakdown by Billing Type</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div v-for="(data, type) in kpis.by_billing_type" :key="type" class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <h4 class="font-bold text-gray-800 mb-3">{{ formatString(type) }}</h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between pb-1.5 border-b border-gray-200">
+                                        <span class="text-gray-500 font-medium">Hours</span>
+                                        <span class="font-bold text-gray-900">{{ Number(data.hours || 0).toFixed(2) }}</span>
+                                    </div>
+
+                                    <!-- Billed PHP & USD -->
+                                    <div>
+                                        <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Billed</div>
+                                        <div class="flex justify-between">
+                                            <span class="text-xs text-gray-500">PHP</span>
+                                            <span class="font-bold text-green-700">
+                                                {{ formatCurrency(getCurrencyMetric(data.billed, 'PHP'), 'PHP') }}
+                                            </span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-xs text-gray-500">USD</span>
+                                            <span class="font-bold text-green-700">
+                                                {{ formatCurrency(getCurrencyMetric(data.billed, 'USD'), 'USD') }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Unbilled PHP & USD -->
+                                    <div class="pt-1.5 border-t border-gray-200">
+                                        <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Unbilled</div>
+                                        <div class="flex justify-between">
+                                            <span class="text-xs text-gray-500">PHP</span>
+                                            <span class="font-bold text-blue-700">
+                                                {{ formatCurrency(getCurrencyMetric(data.unbilled, 'PHP'), 'PHP') }}
+                                            </span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-xs text-gray-500">USD</span>
+                                            <span class="font-bold text-blue-700">
+                                                {{ formatCurrency(getCurrencyMetric(data.unbilled, 'USD'), 'USD') }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- Upcoming Events -->
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                                <h2 class="text-lg font-bold">Upcoming Events</h2>
+                                <button
+                                    @click="openEventModal()"
+                                    class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200"
+                                >
+                                    + Add Event
+                                </button>
+                            </div>
+
+                            <div class="max-h-80 overflow-y-auto pr-2">
+                                <ul class="space-y-4" v-if="events && events.length > 0">
+                                    <li v-for="event in events" :key="event.id" class="bg-red-50 p-3 rounded-lg border border-red-100">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <span class="font-bold text-gray-900 leading-tight">{{ event.title }}</span>
+                                                <div class="text-sm text-gray-600 font-medium">{{ event.matter?.name }}</div>
+                                            </div>
+                                            <span class="text-xs font-bold text-red-700 bg-red-200 px-2 py-0.5 rounded shrink-0 ml-2">
+                                                {{ new Date(event.scheduled_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) }}
+                                            </span>
+                                        </div>
+                                        <div class="flex space-x-3 mt-2 text-xs">
+                                            <button @click="openEventModal(event)" class="text-blue-600 hover:underline font-medium">Edit</button>
+                                            <button @click="deleteEvent(event)" class="text-red-500 hover:underline font-medium">Delete</button>
+                                        </div>
+                                    </li>
+                                </ul>
+                                <p v-else class="text-gray-500 text-sm italic">No upcoming events scheduled.</p>
+                            </div>
+                        </div>
+
+                        <!-- Pending Tasks -->
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                                <h2 class="text-lg font-bold">Pending Tasks</h2>
+                                <button
+                                    @click="openTaskModal()"
+                                    class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200"
+                                >
+                                    + Add Task
+                                </button>
+                            </div>
+
+                            <div class="max-h-80 overflow-y-auto pr-2">
+                                <ul class="space-y-4" v-if="tasks && tasks.length > 0">
+                                    <li v-for="task in tasks" :key="task.id" class="flex items-start space-x-3 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                        <div class="w-full">
+                                            <div class="flex justify-between items-start">
+                                                <div>
+                                                    <span class="font-bold text-gray-900 leading-tight">{{ task.title }}</span>
+                                                    <div class="text-sm text-gray-600 font-medium">{{ task.matter?.name }}</div>
+                                                </div>
+                                                <span class="text-xs font-medium text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded border border-yellow-200 shrink-0 ml-2">
+                                                    Due: {{ new Date(task.deadline).toLocaleDateString() }}
+                                                </span>
+                                            </div>
+                                            <div class="flex space-x-3 mt-2 text-xs">
+                                                <button @click="openTaskModal(task)" class="text-blue-600 hover:underline font-medium">Edit</button>
+                                                <button @click="deleteTask(task)" class="text-red-500 hover:underline font-medium">Delete</button>
+                                            </div>
+                                        </div>
+                                    </li>
+                                </ul>
+                                <p v-else class="text-gray-500 text-sm italic">All caught up! No pending tasks.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Matters -->
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex justify-between items-center mb-4 border-b pb-2">
+                            <h2 class="text-lg font-bold">Active Matters</h2>
+                            <button
+                                @click="isMatterModalOpen = true"
+                                class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200"
+                            >
+                                + Add Matter
+                            </button>
+                        </div>
+                        <div class="max-h-[46rem] overflow-y-auto pr-2">
+                            <ul class="space-y-2" v-if="matters && matters.length > 0">
+                                <li v-for="matter in matters" :key="matter.id">
+                                    <Link
+                                        :href="route('matters.show', matter.id)"
+                                        class="block p-3 rounded hover:bg-gray-50 transition border border-transparent hover:border-gray-200"
+                                    >
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="font-semibold text-blue-600">{{ matter.name }}</span>
+                                            <span
+                                                :class="[
+                                                    'shrink-0 px-1.5 py-0.5 rounded text-[11px] font-semibold',
+                                                    (matter.currency || 'PHP') === 'PHP'
+                                                        ? 'bg-emerald-50 text-emerald-700'
+                                                        : 'bg-indigo-50 text-indigo-700',
+                                                ]"
+                                            >
+                                                {{ matter.currency || 'PHP' }}
+                                            </span>
+                                        </div>
+                                        <div class="font-semibold text-gray-600">{{ matter.client?.name }}</div>
+                                        <div class="text-xs text-gray-500 mt-2 flex justify-between items-center">
+                                            <div class="flex items-center space-x-2">
+                                                <span>{{ matter.authority }}</span>
+                                                <span v-if="matter.billing_type" class="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-medium">
+                                                    {{ formatString(matter.billing_type) }}
+                                                </span>
+                                            </div>
+                                            <span class="text-green-600 font-semibold">{{ matter.status }}</span>
+                                        </div>
+                                    </Link>
+                                </li>
+                            </ul>
+                            <p v-else class="text-gray-500 text-sm italic">No active matters assigned.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modals -->
+        <DashboardTaskModal :show="isTaskModalOpen" :matters="matters" :task="selectedTask" @close="isTaskModalOpen = false" />
+        <DashboardEventModal :show="isEventModalOpen" :matters="matters" :event="selectedEvent" @close="isEventModalOpen = false" />
+        <DashboardMatterModal :show="isMatterModalOpen" :clients="clients" @close="isMatterModalOpen = false" />
+        <DashboardTimeEntryModal :show="isTimeEntryModalOpen" :matters="matters" :time-entry="selectedTimeEntry" @close="isTimeEntryModalOpen = false" />
+    </AuthenticatedLayout>
+</template>
