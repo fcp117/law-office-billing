@@ -5,7 +5,7 @@
     <title>Statement of Account - {{ $matter->name }}</title>
     <style>
         body {
-            font-family: 'Dejavu Sans', Helvetica, Arial, sans-serif;
+            font-family: 'DejaVu Sans', Helvetica, Arial, sans-serif;
             color: #334155;
             font-size: 14px;
             line-height: 1.5;
@@ -115,11 +115,16 @@
 </head>
 <body>
 
+    @php
+        $currency = $matter->currency ?? 'PHP';
+        $symbol = $matter->currency_symbol;
+    @endphp
+
     <div class="container">
         <!-- Header Section -->
         <div class="header">
             <h1>Statement of Account</h1>
-            <p>Generated on {{ date('F j, Y') }}</p>
+            <p>Generated on {{ date('F j, Y') }} &nbsp;|&nbsp; Currency: {{ $currency }}</p>
         </div>
 
         <!-- Client & Matter Info -->
@@ -143,11 +148,10 @@
                 @forelse($matter->invoices as $inv)
                     <tr>
                         <td class="font-bold">{{ $inv->invoice_number }}</td>
-                        <!-- Fixed: Using Carbon's format() instead of JS toLocaleDateString() -->
                         <td>{{ \Carbon\Carbon::parse($inv->issue_date)->format('M d, Y') }}</td>
-                        <td class="text-right">${{ number_format($inv->total_amount, 2) }}</td>
-                        <td class="text-right text-green">${{ number_format($inv->total_payments, 2) }}</td>
-                        <td class="text-right font-bold">${{ number_format($inv->balance_due, 2) }}</td>
+                        <td class="text-right">{{ $symbol }}{{ number_format($inv->total_amount, 2) }}</td>
+                        <td class="text-right text-green">{{ $symbol }}{{ number_format($inv->total_payments, 2) }}</td>
+                        <td class="text-right font-bold">{{ $symbol }}{{ number_format($inv->balance_due, 2) }}</td>
                     </tr>
                 @empty
                     <tr>
@@ -160,8 +164,8 @@
         <!-- Summary Section -->
         <div class="clearfix">
             <div class="summary-box">
-                <h3>Total Unpaid Amount</h3>
-                <p>${{ number_format($matter->total_unpaid_amount ?? 0, 2) }}</p>
+                <h3>Total Unpaid Amount ({{ $currency }})</h3>
+                <p>{{ $symbol }}{{ number_format($matter->total_unpaid_amount ?? 0, 2) }}</p>
             </div>
         </div>
     </div>

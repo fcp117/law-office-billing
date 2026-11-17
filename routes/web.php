@@ -50,6 +50,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/matters/{matter}', [MatterController::class, 'update'])->name('matters.update');
     Route::get('/lawyers', [LawyerController::class, 'index'])->name('lawyers');
     Route::put('/lawyers/{user}', [LawyerController::class, 'update'])->name('lawyers.update');
+    Route::post('/matters/{matter}/lawyers', [MatterController::class, 'assignLawyer'])
+        ->name('matters.lawyers.store');
+    Route::delete('/matters/{matter}/lawyers/{user}', [MatterController::class, 'removeLawyer'])
+        ->name('matters.lawyers.destroy');
 });
 
 Route::delete('/matters/{matter}', [MatterController::class, 'destroy'])

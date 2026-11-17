@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Matter extends Model
 {
+    public const CURRENCIES = ['PHP', 'USD'];
+
     protected $fillable = [
         'name',
         'description',
@@ -28,6 +30,10 @@ class Matter extends Model
         'fixed_fee_amount',
         'created_by',
         'modified_by',
+    ];
+
+    protected $appends = [
+        'currency_symbol',
     ];
 
     // Ensures these columns are treated as Dates, not just strings
@@ -80,13 +86,11 @@ class Matter extends Model
         return $this->hasMany(Task::class);
     }
 
-    // 1. The missing TimeEntries relationship
     public function timeEntries()
     {
         return $this->hasMany(TimeEntry::class);
     }
-    
-    // 2. The missing Invoices relationship
+
     public function invoices()
     {
         return $this->hasMany(Invoice::class);

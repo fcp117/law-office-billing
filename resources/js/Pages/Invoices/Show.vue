@@ -6,9 +6,12 @@ import { computed } from 'vue';
 const props = defineProps({
     invoice: {
         type: Object,
-        required: true
-    }
+        required: true,
+    },
 });
+
+const currency = computed(() => props.invoice.matter?.currency || 'PHP');
+const currencySymbol = computed(() => (currency.value === 'PHP' ? '₱' : '$'));
 
 // Determine Billing Type Flags
 const billingType = computed(() => props.invoice.matter?.billing_type?.toLowerCase() || 'hourly');
@@ -16,32 +19,32 @@ const isHourly = computed(() => billingType.value === 'hourly');
 const isFixedRate = computed(() => billingType.value === 'fixed_rate');
 const isContingency = computed(() => billingType.value === 'contingency');
 
-// Format date to match 'F d, Y' (e.g., October 9, 2026)
 const formatLongDate = (dateString) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
     });
 };
 
-// Format date to match 'm/d/Y' for line items
 const formatShortDate = (dateString) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
         month: '2-digit',
         day: '2-digit',
-        year: 'numeric'
+        year: 'numeric',
     });
 };
 
-// PHP-style currency formatting with the Philippine Peso symbol
 const formatCurrency = (amount) => {
-    return '$' + Number(amount || 0).toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
+    return (
+        currencySymbol.value +
+        Number(amount || 0).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        })
+    );
 };
 </script>
 
@@ -49,19 +52,22 @@ const formatCurrency = (amount) => {
     <Head :title="`Invoice - ${invoice.invoice_number}`" />
 
     <AuthenticatedLayout>
-        <!-- Print-hidden navigation & download header toolbar -->
         <template #header>
             <div class="flex justify-between items-center print:hidden">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                     Invoice: {{ invoice.invoice_number }}
                 </h2>
                 <div class="space-x-3">
-                    <a :href="route('invoices.download', invoice.id)" 
-                       class="inline-flex items-center bg-slate-800 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-slate-700 transition shadow-sm">
+                    <a
+                        :href="route('invoices.download', invoice.id)"
+                        class="inline-flex items-center bg-slate-800 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-slate-700 transition shadow-sm"
+                    >
                         Download PDF
                     </a>
-                    <a :href="route('invoices.ledes', invoice.id)" 
-                       class="inline-flex items-center bg-indigo-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-indigo-700 transition shadow-sm">
+                    <a
+                        :href="route('invoices.ledes', invoice.id)"
+                        class="inline-flex items-center bg-indigo-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-indigo-700 transition shadow-sm"
+                    >
                         Download LEDES
                     </a>
                 </div>
@@ -69,15 +75,13 @@ const formatCurrency = (amount) => {
         </template>
 
         <div class="py-12">
-            <!-- Main Statement Document Wrapper -->
             <div class="max-w-4xl mx-auto bg-white p-10 shadow-sm rounded-lg border border-slate-200 space-y-8 print:shadow-none print:border-none print:p-0">
-                
                 <!-- Firm Letterhead & Invoice Header Table -->
                 <table class="w-full border-collapse">
                     <tr>
                         <td class="align-top">
                             <div class="text-lg font-bold uppercase tracking-wide text-slate-900">
-                                Ortega, Bacorro, Odulio, Calma & Carbonell
+                                Ortega, Bacorro, Odulio, Calma &amp; Carbonell
                             </div>
                             <div class="text-xs text-slate-500 mt-1 leading-relaxed">
                                 Attorneys-at-Law<br>
@@ -94,7 +98,8 @@ const formatCurrency = (amount) => {
                             <div class="text-xs text-slate-500 leading-relaxed">
                                 <strong>Invoice No:</strong> {{ invoice.invoice_number }}<br>
                                 <strong>Date:</strong> {{ formatLongDate(invoice.issue_date) }}<br>
-                                <strong>Due Date:</strong> {{ formatLongDate(invoice.due_date) }}
+                                <strong>Due Date:</strong> {{ formatLongDate(invoice.due_date) }}<br>
+                                <strong>Currency:</strong> {{ currency }}
                             </div>
                         </td>
                     </tr>
@@ -128,7 +133,7 @@ const formatCurrency = (amount) => {
                             <td class="font-bold text-slate-700 py-1" style="width: 20%;">FIXED FEE AMOUNT:</td>
                             <td class="text-slate-800 py-1" style="width: 30%;">{{ formatCurrency(invoice.matter?.fixed_fee_amount) }}</td>
                         </tr>
-                        
+
                         <tr v-if="isContingency">
                             <td class="font-bold text-slate-700 py-1" style="width: 20%;">BILLING TYPE:</td>
                             <td class="text-slate-800 py-1" style="width: 30%;">Contingency</td>
@@ -142,20 +147,18 @@ const formatCurrency = (amount) => {
                     </table>
                 </div>
 
-                <!-- Professional Services Section Title -->
+                <!-- Professional Services Section -->
                 <div>
                     <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-3">
-                        Professional Services Rendered
+                        Professional Services Rendered ({{ currency }})
                     </h4>
-                    
-                    <!-- Itemized Time Entries Table -->
+
                     <div class="overflow-x-auto border border-slate-200 rounded-md">
                         <table class="w-full text-left border-collapse text-xs">
                             <thead>
                                 <tr class="bg-slate-900 text-white uppercase tracking-wider">
                                     <th class="py-2.5 px-3" style="width: 12%;">Date</th>
                                     <th class="py-2.5 px-3" style="width: 15%;">Timekeeper</th>
-                                    <!-- Expand description width dynamically when Rate/Amount columns are hidden -->
                                     <th class="py-2.5 px-3" :style="{ width: isHourly ? '43%' : '63%' }">Description of Services</th>
                                     <th class="py-2.5 px-3 text-center" style="width: 10%;">Hours</th>
                                     <th v-if="isHourly" class="py-2.5 px-3 text-right" style="width: 10%;">Rate</th>
@@ -189,7 +192,7 @@ const formatCurrency = (amount) => {
                                 <td class="p-2.5 text-right font-bold text-slate-900 border-b border-slate-200">{{ formatCurrency((invoice.total_amount / 1.12) * 0.12) }}</td>
                             </tr>
                             <tr class="bg-slate-100">
-                                <td class="p-2.5 font-bold text-slate-900"><strong>Total:</strong></td>
+                                <td class="p-2.5 font-bold text-slate-900"><strong>Total ({{ currency }}):</strong></td>
                                 <td class="p-2.5 text-right font-bold text-slate-900 text-sm"><strong>{{ formatCurrency(invoice.total_amount) }}</strong></td>
                             </tr>
                         </table>
@@ -204,9 +207,8 @@ const formatCurrency = (amount) => {
 
                 <!-- Footer Check Payment Notice -->
                 <div class="text-center text-[10px] text-slate-400 mt-12 pt-4 border-t border-slate-200">
-                    Please make checks payable to <strong>Ortega, Bacorro, Odulio, Calma & Carbonell</strong>. Thank you for your continued confidence and patronage.
+                    Please make checks payable to <strong>Ortega, Bacorro, Odulio, Calma &amp; Carbonell</strong>. Thank you for your continued confidence and patronage.
                 </div>
-
             </div>
         </div>
     </AuthenticatedLayout>

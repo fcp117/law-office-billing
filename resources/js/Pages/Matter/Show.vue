@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 // Import our Modals
@@ -12,7 +12,14 @@ import DashboardMatterModal from '@/Components/DashboardMatterModal.vue';
 const props = defineProps({
     matter: Object,
     clients: Array,
+    lawyers: {
+        type: Array,
+        default: () => [],
+    },
 });
+
+const page = usePage();
+const isPartner = computed(() => page.props.auth?.user?.role === 'Partner');
 
 const matterCurrency = computed(() => props.matter.currency || 'PHP');
 const currencySymbol = computed(() => (matterCurrency.value === 'PHP' ? '₱' : '$'));
@@ -25,6 +32,41 @@ const formatCurrency = (amount) => {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(Number(amount || 0));
+};
+
+// ==========================================
+// 0. HANDLING LAWYERS ASSIGNMENT (PARTNER ONLY)
+// ==========================================
+const assignLawyerForm = useForm({
+    user_id: '',
+});
+
+const availableLawyers = computed(() => {
+    const assignedIds = new Set((props.matter.users || []).map((u) => u.id));
+    return props.lawyers.filter((lawyer) => !assignedIds.has(lawyer.id));
+});
+
+const assignLawyer = () => {
+    if (!assignLawyerForm.user_id || assignLawyerForm.processing) return;
+
+    assignLawyerForm.post(route('matters.lawyers.store', props.matter.id), {
+        preserveScroll: true,
+        onSuccess: () => assignLawyerForm.reset('user_id'),
+    });
+};
+
+const removingLawyerId = ref(null);
+
+const removeLawyer = (user) => {
+    if (!confirm(`Remove ${user.name} from this matter?`)) return;
+
+    removingLawyerId.value = user.id;
+    router.delete(route('matters.lawyers.destroy', [props.matter.id, user.id]), {
+        preserveScroll: true,
+        onFinish: () => {
+            removingLawyerId.value = null;
+        },
+    });
 };
 
 // ==========================================
@@ -226,11 +268,60 @@ const deleteMatter = () => {
 
                     <!-- Handling Lawyers -->
                     <div class="border-t border-slate-700 pt-4 mt-4">
-                        <h3 class="text-sm font-semibold text-gray-400 uppercase mb-2">Handling Lawyers</h3>
-                        <div class="flex flex-wrap gap-4">
-                            <div v-for="user in matter.users" :key="user.id" class="text-sm">
-                                <span class="font-bold">{{ user.name }}</span>
-                                <span class="text-slate-400"> ({{ user.role }})</span>
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+                            <h3 class="text-sm font-semibold text-gray-400 uppercase">Handling Lawyers</h3>
+
+                            <!-- Partner-only Assign Lawyer Control -->
+                            <form
+                                v-if="isPartner && availableLawyers.length > 0"
+                                @submit.prevent="assignLawyer"
+                                class="flex items-center gap-2"
+                            >
+                                <select
+                                    v-model="assignLawyerForm.user_id"
+                                    class="rounded-md border-slate-600 bg-slate-700 text-sm text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                >
+                                    <option value="" disabled>Select Partner or Associate...</option>
+                                    <option
+                                        v-for="lawyer in availableLawyers"
+                                        :key="lawyer.id"
+                                        :value="lawyer.id"
+                                    >
+                                        {{ lawyer.name }} ({{ lawyer.role }})
+                                    </option>
+                                </select>
+                                <button
+                                    type="submit"
+                                    :disabled="!assignLawyerForm.user_id || assignLawyerForm.processing"
+                                    class="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition disabled:opacity-50"
+                                >
+                                    {{ assignLawyerForm.processing ? 'Assigning...' : '+ Assign Lawyer' }}
+                                </button>
+                            </form>
+                        </div>
+
+                        <div v-if="assignLawyerForm.errors.user_id" class="mb-2 text-xs text-red-400">
+                            {{ assignLawyerForm.errors.user_id }}
+                        </div>
+
+                        <div class="flex flex-wrap gap-2.5">
+                            <div
+                                v-for="user in matter.users"
+                                :key="user.id"
+                                class="inline-flex items-center gap-2 rounded-full bg-slate-700/80 border border-slate-600 px-3 py-1 text-sm"
+                            >
+                                <span class="font-semibold text-white">{{ user.name }}</span>
+                                <span class="text-xs text-slate-300">({{ user.pivot?.assignment_role || user.role }})</span>
+                                <button
+                                    v-if="isPartner && matter.users.length > 1"
+                                    type="button"
+                                    @click="removeLawyer(user)"
+                                    :disabled="removingLawyerId === user.id"
+                                    title="Remove lawyer from matter"
+                                    class="ml-1 text-slate-400 hover:text-red-400 font-bold text-xs leading-none disabled:opacity-50"
+                                >
+                                    &times;
+                                </button>
                             </div>
                         </div>
                     </div>

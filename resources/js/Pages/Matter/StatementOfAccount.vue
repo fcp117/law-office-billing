@@ -1,10 +1,19 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 const props = defineProps({ matter: Object });
 
-const formatCurrency = (amt) => '$' + Number(amt || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const currency = computed(() => props.matter?.currency || 'PHP');
+const currencySymbol = computed(() => (currency.value === 'PHP' ? '₱' : '$'));
+
+const formatCurrency = (amt) =>
+    currencySymbol.value +
+    Number(amt || 0).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 </script>
 
 <template>
@@ -13,7 +22,10 @@ const formatCurrency = (amt) => '$' + Number(amt || 0).toLocaleString('en-US', {
         <template #header>
             <div class="flex justify-between items-center">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">Statement of Account</h2>
-                <a :href="route('matters.statement.download', matter.id)" class="bg-slate-800 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-slate-700 transition">
+                <a
+                    :href="route('matters.statement.download', matter.id)"
+                    class="bg-slate-800 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-slate-700 transition"
+                >
                     Download PDF
                 </a>
             </div>
@@ -23,7 +35,9 @@ const formatCurrency = (amt) => '$' + Number(amt || 0).toLocaleString('en-US', {
             <!-- Client Info Header Section -->
             <div class="bg-white p-6 rounded-lg shadow">
                 <h3 class="text-lg font-bold text-slate-900">Client: {{ matter.client?.name || 'N/A' }}</h3>
-                <p class="text-sm text-gray-600 mt-1">Matter File: {{ matter.name }} | Authority: {{ matter.authority || 'N/A' }}</p>
+                <p class="text-sm text-gray-600 mt-1">
+                    Matter File: {{ matter.name }} | Authority: {{ matter.authority || 'N/A' }} | Currency: {{ currency }}
+                </p>
             </div>
 
             <!-- Invoices Table -->
@@ -51,9 +65,9 @@ const formatCurrency = (amt) => '$' + Number(amt || 0).toLocaleString('en-US', {
                     </tbody>
                 </table>
                 <div class="bg-white p-6 rounded-lg flex flex-col items-end">
-                    <h3 class="text-gray-500 text-sm font-semibold">Total Unpaid Amount</h3>
+                    <h3 class="text-gray-500 text-sm font-semibold">Total Unpaid Amount ({{ currency }})</h3>
                     <p class="text-xl font-bold text-gray-900 mt-1">
-                        {{ parseFloat(matter.total_unpaid_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                        {{ formatCurrency(matter.total_unpaid_amount) }}
                     </p>
                 </div>
             </div>

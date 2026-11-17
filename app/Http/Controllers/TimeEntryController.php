@@ -10,13 +10,13 @@ use Illuminate\Validation\ValidationException;
 
 class TimeEntryController extends Controller
 {
-    public function store(Request $request, Matter $matter)
+    public function store(Request $request, Matter$matter)
     {
         if ($matter->status === 'Completed') {
             return redirect()->back()->with('error', 'This matter is closed. No further time entries can be logged.');
         }
 
-        $validated = $request->validate([
+        $validated =$request->validate([
             'user_id' => 'nullable|exists:users,id',
             'start_time' => 'required|date',
             'hours' => 'required|numeric|min:0.01',
@@ -26,11 +26,11 @@ class TimeEntryController extends Controller
         ]);
 
         $lawyerId = (int) ($validated['user_id'] ?? $request->user()->id);
-        $materialDate = $validated['start_time'];
-        $hours = round((float) $validated['hours'], 2);
+        $materialDate =$validated['start_time'];
+        $hours = round((float)$validated['hours'], 2);
+        $currency =$matter->currency ?? 'PHP';
 
-        $hourlyRate = $this->resolveHourlyRate($lawyerId, $materialDate);
-        $amount = round($hours * $hourlyRate, 2);
+        $hourlyRate =$this->resolveHourlyRate($lawyerId,$materialDate, $currency);$amount = round($hours * $hourlyRate, 2);
 
         $matter->timeEntries()->create([
             'user_id' => $lawyerId,
@@ -47,7 +47,7 @@ class TimeEntryController extends Controller
         return redirect()->back()->with('success', 'Time entry logged.');
     }
 
-    public function update(Request $request, TimeEntry $timeEntry)
+    public function update(Request $request, TimeEntry$timeEntry)
     {
         if ($timeEntry->invoice_id !== null) {
             return redirect()->back()->with('error', 'This time entry has already been billed and cannot be modified.');
@@ -57,7 +57,7 @@ class TimeEntryController extends Controller
             return redirect()->back()->with('error', 'This matter is closed. Time entries can no longer be edited.');
         }
 
-        $validated = $request->validate([
+        $validated =$request->validate([
             'user_id' => 'nullable|exists:users,id',
             'start_time' => 'required|date',
             'hours' => 'required|numeric|min:0.01',
@@ -67,12 +67,12 @@ class TimeEntryController extends Controller
         ]);
 
         $lawyerId = (int) ($validated['user_id'] ?? $timeEntry->user_id);
-        $materialDate = $validated['start_time'];
-        $hours = round((float) $validated['hours'], 2);
+        $materialDate =$validated['start_time'];
+        $hours = round((float)$validated['hours'], 2);
+        $currency =$timeEntry->matter->currency ?? 'PHP';
 
         // Re-evaluate temporal rate in case start_time or user_id changed
-        $hourlyRate = $this->resolveHourlyRate($lawyerId, $materialDate);
-        $amount = round($hours * $hourlyRate, 2);
+        $hourlyRate =$this->resolveHourlyRate($lawyerId,$materialDate, $currency);$amount = round($hours * $hourlyRate, 2);
 
         $timeEntry->update([
             'user_id' => $lawyerId,
@@ -105,15 +105,15 @@ class TimeEntryController extends Controller
     }
 
     /**
-     * Fetch the lawyer's effective hourly rate on the material date, or fail validation.
+     * Fetch the lawyer's effective hourly rate in the matter's currency on the material date.
      */
-    private function resolveHourlyRate(int $lawyerId, string $materialDate): float
+    private function resolveHourlyRate(int $lawyerId, string $materialDate, string$currency): float
     {
-        $hourlyRate = LawyerRate::getRateFor($lawyerId, $materialDate);
+        $hourlyRate = LawyerRate::getRateFor($lawyerId, $materialDate,$currency);
 
         if ($hourlyRate === null) {
             throw ValidationException::withMessages([
-                'start_time' => 'No hourly rate is configured for the selected lawyer on or before this date.',
+                'start_time' => "No {$currency} hourly rate is configured for the selected lawyer on or before this date.",
             ]);
         }
 

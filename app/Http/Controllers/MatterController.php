@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Models\Matter;
+use App\Models\Client;
+use App\Models\User;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class MatterController extends Controller
 {
+    public const ASSIGNABLE_LAWYER_ROLES = ['Partner', 'Associate'];
+    
     public function show($id)
     {
         $user = auth()->user();
@@ -23,7 +27,6 @@ class MatterController extends Controller
             'users',
             'events',
             'tasks',
-            // Order time entries chronologically by start_time
             'timeEntries' => function ($query) {
                 $query->orderBy('start_time', 'asc');
             },
@@ -37,16 +40,62 @@ class MatterController extends Controller
             return $invoice;
         });
 
-        // Calculate the total unpaid amount for this matter
         $matter->total_unpaid_amount = $matter->invoices->sum('balance_due');
 
-        // Fetch clients for the Edit Matter modal
-        $clients = \App\Models\Client::orderBy('name', 'asc')->get();
+        $clients = Client::orderBy('name', 'asc')->get();
+
+        // Only pass assignable lawyers when the logged-in user is a Partner
+        $lawyers = $user->role === 'Partner'
+            ? User::whereIn('role', self::ASSIGNABLE_LAWYER_ROLES)
+                ->orderBy('name', 'asc')
+                ->get(['id', 'name', 'email', 'role'])
+            : [];
 
         return Inertia::render('Matter/Show', [
             'matter' => $matter,
             'clients' => $clients,
+            'lawyers' => $lawyers,
         ]);
+    }
+
+    public function assignLawyer(Request $request, Matter $matter)
+    {
+        abort_unless($request->user()->role === 'Partner', 403, 'Only Partners can assign lawyers to cases.');
+
+        $validated = $request->validate([
+            'user_id' => [
+                'required',
+                'integer',
+                Rule::exists('users', 'id')->whereIn('role', self::ASSIGNABLE_LAWYER_ROLES),
+            ],
+        ], [
+            'user_id.exists' => 'Only Partners and Associates can be assigned to a matter.',
+        ]);
+
+        $lawyer = User::findOrFail($validated['user_id']);
+
+        if ($matter->users()->where('users.id', $lawyer->id)->exists()) {
+            return redirect()->back()->with('error', "{$lawyer->name} is already assigned to this matter.");
+        }
+
+        $matter->users()->attach($lawyer->id, [
+            'assignment_role' => $lawyer->role,
+        ]);
+
+        return redirect()->back()->with('success', "{$lawyer->name} assigned to matter.");
+    }
+
+    public function removeLawyer(Request $request, Matter $matter, User $user)
+    {
+        abort_unless($request->user()->role === 'Partner', 403, 'Only Partners can remove lawyers from cases.');
+
+        if ($matter->users()->count() <= 1) {
+            return redirect()->back()->with('error', 'At least one handling lawyer must remain assigned to the matter.');
+        }
+
+        $matter->users()->detach($user->id);
+
+        return redirect()->back()->with('success', "{$user->name} removed from matter.");
     }
 
     public function store(Request $request)

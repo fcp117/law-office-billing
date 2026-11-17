@@ -12,6 +12,7 @@ class DashboardController extends Controller
 {
     public function index(?User $user = null, Request $request)
     {
+        $billingTypes = ['hourly', 'fixed_rate', 'contingency', 'administrative'];
         // Fallback to the authenticated user if no user is specified in the route
         $targetUserId = $request->query('user_id') ?? optional($user)->id ?? auth()->id();
         $targetUser = User::findOrFail($targetUserId);
@@ -49,39 +50,53 @@ class DashboardController extends Controller
         $kpis = [
             'aggregate' => [
                 'hours' => 0,
-                'billed' => 0,
-                'unbilled' => 0,
+                'billed' => ['PHP' => 0, 'USD' => 0],
+                'unbilled' => ['PHP' => 0, 'USD' => 0],
             ],
-            'by_billing_type' => []
+            'by_billing_type' => [],
         ];
 
-        // Process each time entry to populate aggregate and billing-type specific totals
-        foreach ($timeEntries as $entry) {
-            $billingType = $entry->matter->billing_type ?? 'Unspecified';
+        foreach ($billingTypes as $type) {
+            $kpis['by_billing_type'][$type] = [
+                'hours' => 0,
+                'billed' => ['PHP' => 0, 'USD' => 0],
+                'unbilled' => ['PHP' => 0, 'USD' => 0],
+            ];
+        }
 
-            // Initialize the specific billing type array if it doesn't exist yet
-            if (!isset($kpis['by_billing_type'][$billingType])) {
-                $kpis['by_billing_type'][$billingType] = [
+        $entries = \App\Models\TimeEntry::with('matter:id,billing_type,currency')
+                ->where('user_id', $targetUser->id)
+                ->whereBetween('start_time', [now()->startOfMonth(), now()->endOfMonth()])
+                ->get();
+
+        // Process each time entry to populate aggregate and billing-type specific totals
+        foreach ($entries as $entry) {
+            $hours = (float) $entry->hours;
+            $amount = (float) $entry->amount;
+            $type = strtolower($entry->matter->billing_type ?? 'hourly');
+            $currency = strtoupper($entry->matter->currency ?? 'PHP');
+
+            if (!isset($kpis['by_billing_type'][$type])) {
+                $kpis['by_billing_type'][$type] = [
                     'hours' => 0,
-                    'billed' => 0,
-                    'unbilled' => 0,
+                    'billed' => ['PHP' => 0, 'USD' => 0],
+                    'unbilled' => ['PHP' => 0, 'USD' => 0],
                 ];
             }
 
-            $amount = $entry->hours * $hourlyRate;
+            if (!in_array($currency, ['PHP', 'USD'], true)) {
+                $currency = 'PHP';
+            }
 
-            // Add to aggregate totals
-            $kpis['aggregate']['hours'] += $entry->hours;
+            $kpis['aggregate']['hours'] += $hours;
+            $kpis['by_billing_type'][$type]['hours'] += $hours;
 
-            // Add to billing type specific totals
-            $kpis['by_billing_type'][$billingType]['hours'] += $entry->hours;
-
-            if (!is_null($entry->invoice_id)) {
-                $kpis['aggregate']['billed'] += $amount;
-                $kpis['by_billing_type'][$billingType]['billed'] += $amount;
+            if ($entry->invoice_id !== null) {
+                $kpis['aggregate']['billed'][$currency] += $amount;
+                $kpis['by_billing_type'][$type]['billed'][$currency] += $amount;
             } else {
-                $kpis['aggregate']['unbilled'] += $amount;
-                $kpis['by_billing_type'][$billingType]['unbilled'] += $amount;
+                $kpis['aggregate']['unbilled'][$currency] += $amount;
+                $kpis['by_billing_type'][$type]['unbilled'][$currency] += $amount;
             }
         }
 

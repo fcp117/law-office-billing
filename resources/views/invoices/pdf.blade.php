@@ -4,40 +4,43 @@
     <meta charset="utf-8">
     <title>Statement of Account - {{ $invoice->invoice_number }}</title>
     <style>
-        body { font-family: 'Dejavu Sans', Helvetica, Arial, sans-serif; color: #333; font-size: 12px; line-height: 1.4; margin: 0; padding: 0; }
+        body { font-family: 'DejaVu Sans', Helvetica, Arial, sans-serif; color: #333; font-size: 12px; line-height: 1.4; margin: 0; padding: 0; }
         .header-table, .details-table, .items-table { width: 100%; border-collapse: collapse; }
         .header-table td { vertical-align: top; }
         .firm-name { font-size: 18px; font-weight: bold; text-transform: uppercase; color: #1e293b; }
         .firm-address, .invoice-meta { font-size: 11px; color: #64748b; }
         .invoice-title { font-size: 20px; font-weight: bold; text-align: right; color: #0f172a; text-transform: uppercase; margin-bottom: 5px; }
-        
+
         .box { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; margin-top: 20px; }
         .details-table td { padding: 4px 8px; font-size: 11px; }
-        
+
         .items-table { margin-top: 30px; }
         .items-table th { background-color: #0f172a; color: #fff; text-transform: uppercase; font-size: 10px; padding: 8px; text-align: left; }
         .items-table td { padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; vertical-align: top; }
-        
+
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         .bold { font-weight: bold; }
-        
+
         .totals-section { margin-top: 20px; width: 40%; float: right; }
         .totals-table { width: 100%; border-collapse: collapse; }
         .totals-table td { padding: 6px 8px; font-size: 11px; border-bottom: 1px solid #e2e8f0; }
-        
+
         .footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 9px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 8px; }
     </style>
 </head>
 <body>
 
     @php
+        $currency = $invoice->matter->currency ?? 'PHP';
+        $symbol = $invoice->matter->currency_symbol;
+
         // Determine Billing Type Flags
         $billingType = strtolower($invoice->matter->billing_type ?? 'hourly');
         $isHourly = $billingType === 'hourly';
         $isFixedRate = $billingType === 'fixed_rate';
         $isContingency = $billingType === 'contingency';
-        
+
         // Totals Calculations
         $ourFees = $invoice->total_amount / 1.12;
         $vat = $ourFees * 0.12;
@@ -47,7 +50,7 @@
     <table class="header-table">
         <tr>
             <td>
-                <div class="firm-name">Ortega, Bacorro, Odulio, Calma & Carbonell</div>
+                <div class="firm-name">Ortega, Bacorro, Odulio, Calma &amp; Carbonell</div>
                 <div class="firm-address">
                     Attorneys-at-Law<br>
                     5th and 6th Floors ALPAP 1 Bldg.<br>
@@ -61,7 +64,8 @@
                 <div class="invoice-meta text-right">
                     <strong>Invoice No:</strong> {{ $invoice->invoice_number }}<br>
                     <strong>Date:</strong> {{ $invoice->issue_date->format('F d, Y') }}<br>
-                    <strong>Due Date:</strong> {{ $invoice->due_date->format('F d, Y') }}
+                    <strong>Due Date:</strong> {{ $invoice->due_date->format('F d, Y') }}<br>
+                    <strong>Currency:</strong> {{ $currency }}
                 </div>
             </td>
         </tr>
@@ -95,10 +99,10 @@
                         <td class="bold" style="width: 20%;">BILLING TYPE:</td>
                         <td style="width: 30%;">Fixed Rate</td>
                         <td class="bold" style="width: 20%;">FIXED FEE AMOUNT:</td>
-                        <td style="width: 30%;">${{ number_format($invoice->matter->fixed_fee_amount, 2) }}</td>
+                        <td style="width: 30%;">{{ $symbol }}{{ number_format($invoice->matter->fixed_fee_amount, 2) }}</td>
                     </tr>
                 @endif
-                
+
                 @if($isContingency)
                     <tr>
                         <td class="bold" style="width: 20%;">BILLING TYPE:</td>
@@ -108,7 +112,7 @@
                     </tr>
                     <tr>
                         <td class="bold">SETTLEMENT / JUDGMENT:</td>
-                        <td colspan="3">${{ number_format($invoice->matter->settlement_judgment, 2) }}</td>
+                        <td colspan="3">{{ $symbol }}{{ number_format($invoice->matter->settlement_judgment, 2) }}</td>
                     </tr>
                 @endif
             </table>
@@ -116,7 +120,7 @@
     @endif
 
     <!-- Professional Services Itemized Breakdown -->
-    <h4 style="margin-top: 30px; margin-bottom: 5px; text-transform: uppercase; font-size: 11px; color: #475569;">Professional Services Rendered</h4>
+    <h4 style="margin-top: 30px; margin-bottom: 5px; text-transform: uppercase; font-size: 11px; color: #475569;">Professional Services Rendered ({{ $currency }})</h4>
     <table class="items-table">
         <thead>
             <tr>
@@ -138,8 +142,8 @@
                     <td>{{ $entry->description }}</td>
                     <td class="text-center">{{ number_format($entry->hours, 2) }}</td>
                     @if($isHourly)
-                        <td class="text-right">${{ number_format($entry->hourly_rate, 2) }}</td>
-                        <td class="text-right bold">${{ number_format($entry->amount, 2) }}</td>
+                        <td class="text-right">{{ $symbol }}{{ number_format($entry->hourly_rate, 2) }}</td>
+                        <td class="text-right bold">{{ $symbol }}{{ number_format($entry->amount, 2) }}</td>
                     @endif
                 </tr>
             @endforeach
@@ -151,15 +155,15 @@
         <table class="totals-table">
             <tr>
                 <td><strong>Our Fees:</strong></td>
-                <td class="text-right bold">${{ number_format($ourFees, 2) }}</td>
+                <td class="text-right bold">{{ $symbol }}{{ number_format($ourFees, 2) }}</td>
             </tr>
             <tr>
                 <td><strong>+ 12% VAT:</strong></td>
-                <td class="text-right">${{ number_format($vat, 2) }}</td>
+                <td class="text-right">{{ $symbol }}{{ number_format($vat, 2) }}</td>
             </tr>
             <tr style="background-color: #f1f5f9;">
-                <td><strong>Total:</strong></td>
-                <td class="text-right bold" style="font-size: 13px; color: #0f172a;">${{ number_format($invoice->total_amount, 2) }}</td>
+                <td><strong>Total ({{ $currency }}):</strong></td>
+                <td class="text-right bold" style="font-size: 13px; color: #0f172a;">{{ $symbol }}{{ number_format($invoice->total_amount, 2) }}</td>
             </tr>
         </table>
     </div>
@@ -173,7 +177,7 @@
     @endif
 
     <div class="footer">
-        Please make checks payable to <strong>Ortega, Bacorro, Odulio, Calma & Carbonell</strong>. Thank you for your continued confidence and patronage.
+        Please make checks payable to <strong>Ortega, Bacorro, Odulio, Calma &amp; Carbonell</strong>. Thank you for your continued confidence and patronage.
     </div>
 
 </body>
