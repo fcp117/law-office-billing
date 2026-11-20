@@ -1,12 +1,19 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 import EditUserModal from '@/Components/EditUserModal.vue';
+import CreateUserModal from '@/Components/CreateUserModal.vue';
 
 const props = defineProps({
     lawyers: Array,
     filters: Object,
+});
+
+const page = usePage();
+const canManageLawyers = computed(() => {
+    const role = page.props.auth?.user?.role;
+    return role === 'Partner' || role === 'Admin';
 });
 
 // Search State with debounce
@@ -26,6 +33,7 @@ const paralegals = computed(() => props.lawyers.filter(l => l.role === 'Paralega
 
 // Modal State
 const isModalOpen = ref(false);
+const isCreateModalOpen = ref(false);
 const selectedLawyer = ref(null);
 
 const openEditModal = (lawyer) => {
@@ -33,7 +41,6 @@ const openEditModal = (lawyer) => {
     isModalOpen.value = true;
 };
 
-// Generates initials avatar placeholder if no photo exists
 const getInitials = (name) => {
     if (!name) return 'LC';
     const parts = name.split(' ');
@@ -57,14 +64,21 @@ const getInitials = (name) => {
                     <p class="text-sm text-gray-500 mt-1">Manage partners, associates, paralegals, hourly rates, and profiles.</p>
                 </div>
                 
-                <!-- Search Input Bar -->
-                <div class="w-full sm:w-72">
+                <!-- Search Input & Create Button -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                     <input 
                         type="text" 
                         v-model="search" 
                         placeholder="Search lawyers by name, email..." 
-                        class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                        class="w-full sm:w-72 rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                     >
+                    <button
+                        v-if="canManageLawyers"
+                        @click="isCreateModalOpen = true"
+                        class="inline-flex items-center justify-center px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold uppercase tracking-wider rounded-lg shadow-sm transition shrink-0"
+                    >
+                        + Add Lawyer
+                    </button>
                 </div>
             </div>
         </template>
@@ -271,6 +285,11 @@ const getInitials = (name) => {
             :show="isModalOpen" 
             :user="selectedLawyer" 
             @close="isModalOpen = false" 
+        />
+
+        <CreateUserModal 
+            :show="isCreateModalOpen" 
+            @close="isCreateModalOpen = false" 
         />
     </AuthenticatedLayout>
 </template>
