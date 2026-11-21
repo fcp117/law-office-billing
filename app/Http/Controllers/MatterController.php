@@ -31,6 +31,7 @@ class MatterController extends Controller
                 $query->orderBy('start_time', 'asc');
             },
             'timeEntries.user',
+            'timeEntries.billable',
             'invoices.payments',
         ])->findOrFail($id);
 

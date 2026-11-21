@@ -32,11 +32,32 @@ class TimeEntry extends Model
         'amount' => 'decimal:2',
     ];
 
-    protected $appends = ['billable_hours'];
+    protected $appends = ['billable_hours', 'formatted_description'];
 
     public function getBillableHoursAttribute(): float
     {
         return (float) ($this->approved_hours ?? $this->hours);
+    }
+
+    public function getFormattedDescriptionAttribute(): string
+    {
+        if (!$this->billable_id || !$this->billable) {
+            return (string) $this->description;
+        }
+
+        $typeLabel = match ($this->billable_type) {
+            Task::class => 'Task',
+            Event::class => 'Event',
+            default => class_basename($this->billable_type),
+        };
+
+        $title = $this->billable->title ?? null;
+
+        if (!$title) {
+            return (string) $this->description;
+        }
+
+        return "[{$typeLabel}: {$title}] {$this->description}";
     }
 
     public function billable()

@@ -542,7 +542,7 @@ const deleteMatter = () => {
                                     </span>
                                 </td>
                                 <td class="p-3 text-slate-600 whitespace-nowrap">{{ new Date(entry.start_time).toLocaleDateString() }}</td>
-                                <td class="p-3 text-slate-600">{{ entry.description }}</td>
+                                <td class="p-3 text-slate-600">{{ entry.formatted_description || entry.description }}</td>
                                 <td class="p-3 text-right text-slate-600 font-mono">{{ Number(entry.hours).toFixed(2) }}</td>
 
                                 <!-- Inline Approved Hours Column -->
