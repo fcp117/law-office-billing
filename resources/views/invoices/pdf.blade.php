@@ -139,7 +139,7 @@
                 <tr>
                     <td>{{ $entry->start_time->format('m/d/Y') }}</td>
                     <td class="bold">{{ $entry->user->name ?? 'Lawyer' }}</td>
-                    <td>{{ $entry->description }}</td>
+                    <td>{{ $entry->formatted_description }}</td>
                     <td class="text-center">{{ number_format($entry->approved_hours ?? $entry->hours, 2) }}</td>
                     @if($isHourly)
                         <td class="text-right">{{ $symbol }}{{ number_format($entry->hourly_rate, 2) }}</td>

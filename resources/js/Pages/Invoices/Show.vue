@@ -169,7 +169,7 @@ const formatCurrency = (amount) => {
                                 <tr v-for="entry in invoice.time_entries" :key="entry.id" class="hover:bg-slate-50">
                                     <td class="py-2.5 px-3 text-slate-600">{{ formatShortDate(entry.start_time) }}</td>
                                     <td class="py-2.5 px-3 font-bold text-slate-800">{{ entry.user?.name || 'Lawyer' }}</td>
-                                    <td class="py-2.5 px-3 text-slate-600">{{ entry.description }}</td>
+                                    <td class="py-2.5 px-3 text-slate-600">{{ entry.formatted_description || entry.description }}</td>
                                     <td class="py-2.5 px-3 text-center text-slate-600">{{ Number(entry.approved_hours ?? entry.hours).toFixed(2) }}</td>
                                     <td v-if="isHourly" class="py-2.5 px-3 text-right text-slate-600">{{ formatCurrency(entry.hourly_rate) }}</td>
                                     <td v-if="isHourly" class="py-2.5 px-3 text-right font-bold text-slate-900">{{ formatCurrency(entry.amount) }}</td>
