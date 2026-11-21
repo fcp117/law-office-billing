@@ -396,89 +396,93 @@ const deleteMatter = () => {
         <!-- Content Stack -->
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Tasks Section -->
-                    <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="bg-white p-6 rounded-lg shadow min-w-0">
                         <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h2 class="text-xl font-bold mb-4 border-b pb-2">Tasks</h2>
-                            <button v-if="matter.status !== 'Completed'" @click="openTaskModal()" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200">
+                            <h2 class="text-xl font-bold">Tasks</h2>
+                            <button v-if="matter.status !== 'Completed'" @click="openTaskModal()" class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200 shrink-0">
                                 + Add Task
                             </button>
                         </div>
-                        <table class="w-full text-left" v-if="matter.tasks && matter.tasks.length > 0">
-                            <thead>
-                                <tr class="bg-slate-50 text-slate-600 text-sm">
-                                    <th class="p-3">Title</th>
-                                    <th class="p-3">Deadline</th>
-                                    <th class="p-3">Status</th>
-                                    <th class="p-3">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="task in matter.tasks" :key="task.id" class="border-b">
-                                    <td class="p-3 font-medium">{{ task.title }}</td>
-                                    <td class="p-3 text-slate-600">{{ new Date(task.deadline).toLocaleDateString() }}</td>
-                                    <td class="p-3">
-                                        <span
-                                            class="px-2 py-1 text-xs rounded-full"
-                                            :class="task.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
-                                        >
-                                            {{ task.status }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="flex space-x-3 mt-2 text-xs">
-                                            <button @click="openTaskModal(task)" class="text-green-500 hover:bg-green-600 font-medium text-sm py-1 px-3 rounded">Edit</button>
-                                            <button @click="deleteTask(task)" class="text-red-500 hover:bg-red-600 font-medium text-sm py-1 px-3 rounded">Delete</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div v-if="matter.tasks && matter.tasks.length > 0" class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-600">
+                                        <th class="p-3">Title</th>
+                                        <th class="p-3 whitespace-nowrap">Deadline</th>
+                                        <th class="p-3 whitespace-nowrap">Status</th>
+                                        <th class="p-3 text-right whitespace-nowrap">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="task in matter.tasks" :key="task.id" class="border-b hover:bg-slate-50/70">
+                                        <td class="p-3 font-medium">{{ task.title }}</td>
+                                        <td class="p-3 text-slate-600 whitespace-nowrap">{{ new Date(task.deadline).toLocaleDateString() }}</td>
+                                        <td class="p-3 whitespace-nowrap">
+                                            <span
+                                                class="px-2 py-1 text-xs rounded-full"
+                                                :class="task.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
+                                            >
+                                                {{ task.status }}
+                                            </span>
+                                        </td>
+                                        <td class="p-3 text-right whitespace-nowrap">
+                                            <div class="inline-flex items-center space-x-2 text-xs">
+                                                <button @click="openTaskModal(task)" class="text-green-600 hover:bg-green-50 font-semibold py-1 px-2 rounded">Edit</button>
+                                                <button @click="deleteTask(task)" class="text-red-600 hover:bg-red-50 font-semibold py-1 px-2 rounded">Delete</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                         <p v-else class="text-slate-500 italic">No tasks assigned to this matter.</p>
                     </div>
 
                     <!-- Events Section -->
-                    <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="bg-white p-6 rounded-lg shadow min-w-0">
                         <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h2 class="text-xl font-bold mb-4 border-b pb-2">Events</h2>
-                            <button v-if="matter.status !== 'Completed'" @click="openEventModal()" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200">
+                            <h2 class="text-xl font-bold">Events</h2>
+                            <button v-if="matter.status !== 'Completed'" @click="openEventModal()" class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded hover:bg-blue-100 font-semibold border border-blue-200 shrink-0">
                                 + Add Event
                             </button>
                         </div>
 
-                        <table class="w-full text-left" v-if="matter.events && matter.events.length > 0">
-                            <thead>
-                                <tr class="bg-slate-50 text-slate-600 text-sm">
-                                    <th class="p-3">Title</th>
-                                    <th class="p-3">Scheduled For</th>
-                                    <th class="p-3">Location</th>
-                                    <th class="p-3">Actions</th>
-                                    <th class="p-3">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="event in matter.events" :key="event.id" class="border-b">
-                                    <td class="p-3 font-medium">{{ event.title }}</td>
-                                    <td class="p-3 text-slate-600">{{ new Date(event.scheduled_at).toLocaleString() }}</td>
-                                    <td class="p-3 text-slate-600">{{ event.location || 'N/A' }}</td>
-                                    <td>
-                                        <div class="flex space-x-3 mt-2 text-xs">
-                                            <button @click="openEventModal(event)" class="text-green-500 text-sm hover:bg-green-600 font-medium py-1 px-3 rounded">Edit</button>
-                                            <button @click="deleteEvent(event)" class="text-red-500 text-sm hover:bg-red-600 font-medium py-1 px-3 rounded">Delete</button>
-                                        </div>
-                                    </td>
-                                    <td class="p-3">
-                                        <span
-                                            class="px-2 py-1 text-xs rounded-full"
-                                            :class="event.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'"
-                                        >
-                                            {{ event.status }}
-                                        </span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div v-if="matter.events && matter.events.length > 0" class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-600">
+                                        <th class="p-3">Title</th>
+                                        <th class="p-3 whitespace-nowrap">Scheduled For</th>
+                                        <th class="p-3">Location</th>
+                                        <th class="p-3 whitespace-nowrap">Status</th>
+                                        <th class="p-3 text-right whitespace-nowrap">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="event in matter.events" :key="event.id" class="border-b hover:bg-slate-50/70">
+                                        <td class="p-3 font-medium">{{ event.title }}</td>
+                                        <td class="p-3 text-slate-600 whitespace-nowrap">{{ new Date(event.scheduled_at).toLocaleString() }}</td>
+                                        <td class="p-3 text-slate-600">{{ event.location || 'N/A' }}</td>
+                                        <td class="p-3 whitespace-nowrap">
+                                            <span
+                                                class="px-2 py-1 text-xs rounded-full"
+                                                :class="event.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'"
+                                            >
+                                                {{ event.status }}
+                                            </span>
+                                        </td>
+                                        <td class="p-3 text-right whitespace-nowrap">
+                                            <div class="inline-flex items-center space-x-2 text-xs">
+                                                <button @click="openEventModal(event)" class="text-green-600 hover:bg-green-50 font-semibold py-1 px-2 rounded">Edit</button>
+                                                <button @click="deleteEvent(event)" class="text-red-600 hover:bg-red-50 font-semibold py-1 px-2 rounded">Delete</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                         <p v-else class="text-slate-500 italic">No events scheduled.</p>
                     </div>
                 </div>
