@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 
 // Import our Modals
 import TaskModal from '@/Components/TaskModal.vue';
@@ -19,6 +19,7 @@ const props = defineProps({
 });
 
 const page = usePage();
+const currentUserId = computed(() => page.props.auth?.user?.id);
 const isPartner = computed(() => page.props.auth?.user?.role === 'Partner');
 
 const matterCurrency = computed(() => props.matter.currency || 'PHP');
@@ -102,6 +103,9 @@ const submitPayment = () => {
     });
 };
 
+// ==========================================
+// 1B. TIME ENTRIES & INLINE APPROVAL LOGIC
+// ==========================================
 const isTimeEntryModalOpen = ref(false);
 const selectedTimeEntry = ref(null);
 
@@ -110,10 +114,63 @@ const openTimeEntryModal = (entry = null) => {
     isTimeEntryModalOpen.value = true;
 };
 
+const canManageTimeEntry = (entry) => {
+    if (entry.invoice_id !== null || props.matter.status === 'Completed') {
+        return false;
+    }
+    if (isPartner.value) {
+        return true;
+    }
+    return entry.user_id === currentUserId.value && entry.approved_hours === null;
+};
+
 const deleteTimeEntry = (entry) => {
     if (confirm(`Delete this time entry of ${entry.hours} hours?`)) {
         router.delete(route('time-entries.destroy', entry.id), { preserveScroll: true });
     }
+};
+
+// Inline approval state per entry ID
+const inlineEditingId = ref(null);
+const inlineDrafts = reactive({});
+const savingInlineId = ref(null);
+
+const getInlineValue = (entry) => {
+    if (inlineDrafts[entry.id] === undefined) {
+        inlineDrafts[entry.id] = entry.approved_hours !== null ? entry.approved_hours : entry.hours;
+    }
+    return inlineDrafts[entry.id];
+};
+
+const startInlineEdit = (entry) => {
+    inlineDrafts[entry.id] = entry.approved_hours !== null ? entry.approved_hours : entry.hours;
+    inlineEditingId.value = entry.id;
+};
+
+const cancelInlineEdit = (entry) => {
+    delete inlineDrafts[entry.id];
+    inlineEditingId.value = null;
+};
+
+const saveInlineApproval = (entry) => {
+    const rawValue = getInlineValue(entry);
+    if (rawValue === '' || rawValue === null || Number(rawValue) < 0) return;
+
+    savingInlineId.value = entry.id;
+    router.patch(
+        route('time-entries.approve', entry.id),
+        { approved_hours: Number(rawValue) },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                inlineEditingId.value = null;
+                delete inlineDrafts[entry.id];
+            },
+            onFinish: () => {
+                savingInlineId.value = null;
+            },
+        }
+    );
 };
 
 // ==========================================
@@ -153,6 +210,13 @@ const deleteEvent = (event) => {
 // ==========================================
 // 4. GENERATE INVOICE LOGIC
 // ==========================================
+const unapprovedHourlyCount = computed(() => {
+    if ((props.matter.billing_type || '').toLowerCase() !== 'hourly') return 0;
+    return (props.matter.time_entries || []).filter(
+        (e) => e.invoice_id === null && e.approved_hours === null
+    ).length;
+});
+
 const generateInvoice = () => {
     if (confirm('Generate an invoice for all unbilled time entries?')) {
         const today = new Date();
@@ -424,9 +488,9 @@ const deleteMatter = () => {
         <div class="lg:col-span-2 space-y-6 px-12">
             <!-- Time Entries Section -->
             <div class="bg-white p-6 rounded-lg shadow">
-                <div class="flex justify-between items-center border-b pb-2 mb-4">
+                <div class="flex flex-wrap justify-between items-center gap-3 border-b pb-2 mb-4">
                     <h2 class="text-xl font-bold">Time Entries (Running Billable — {{ matterCurrency }})</h2>
-                    <div class="space-x-3">
+                    <div class="flex items-center space-x-3">
                         <button
                             v-if="matter.status !== 'Completed'"
                             @click="openTimeEntryModal()"
@@ -434,31 +498,140 @@ const deleteMatter = () => {
                         >
                             + Log Hours
                         </button>
+                        <button
+                            v-if="isPartner"
+                            @click="generateInvoice"
+                            class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-blue-700 transition"
+                        >
+                            Generate Invoice
+                        </button>
                     </div>
-                    <button @click="generateInvoice" class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-blue-700 transition">
-                        Generate Invoice
-                    </button>
                 </div>
-                <table class="w-full text-left" v-if="matter.time_entries && matter.time_entries.length > 0">
-                    <thead>
-                        <tr class="bg-slate-50 text-slate-600 text-sm">
-                            <th class="p-3">Lawyer</th>
-                            <th class="p-3">Date</th>
-                            <th class="p-3">Description</th>
-                            <th class="p-3">Hours</th>
-                            <th class="p-3">Amount ({{ matterCurrency }})</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="entry in matter.time_entries" :key="entry.id" class="border-b">
-                            <td class="p-3 font-medium">{{ entry.user?.name || 'Unknown User' }}</td>
-                            <td class="p-3 text-slate-600">{{ new Date(entry.start_time).toLocaleDateString() }}</td>
-                            <td class="p-3 text-slate-600">{{ entry.description }}</td>
-                            <td class="p-3 text-slate-600">{{ entry.hours }}</td>
-                            <td class="p-3 text-slate-600">{{ formatCurrency(entry.amount) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+
+                <!-- Validation / Status Feedback -->
+                <div v-if="$page.props.errors?.message" class="mb-4 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                    {{ $page.props.errors.message }}
+                </div>
+                <div v-else-if="isPartner && unapprovedHourlyCount > 0" class="mb-4 rounded-md bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800">
+                    {{ unapprovedHourlyCount }} unbilled time {{ unapprovedHourlyCount === 1 ? 'entry awaits' : 'entries await' }} Partner approval before an invoice can be generated.
+                </div>
+
+                <div class="overflow-x-auto" v-if="matter.time_entries && matter.time_entries.length > 0">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 text-sm">
+                                <th class="p-3">Lawyer</th>
+                                <th class="p-3">Date</th>
+                                <th class="p-3">Description</th>
+                                <th class="p-3 text-right">Logged Hrs</th>
+                                <th class="p-3 text-right">Approved Hrs</th>
+                                <th class="p-3 text-right">Amount ({{ matterCurrency }})</th>
+                                <th class="p-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="entry in matter.time_entries" :key="entry.id" class="border-b hover:bg-slate-50/70">
+                                <td class="p-3 font-medium">
+                                    {{ entry.user?.name || 'Unknown User' }}
+                                    <span v-if="entry.invoice_id" class="ml-1.5 inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-slate-200 text-slate-700">
+                                        Billed
+                                    </span>
+                                </td>
+                                <td class="p-3 text-slate-600 whitespace-nowrap">{{ new Date(entry.start_time).toLocaleDateString() }}</td>
+                                <td class="p-3 text-slate-600">{{ entry.description }}</td>
+                                <td class="p-3 text-right text-slate-600 font-mono">{{ Number(entry.hours).toFixed(2) }}</td>
+
+                                <!-- Inline Approved Hours Column -->
+                                <td class="p-3 text-right whitespace-nowrap">
+                                    <!-- Partner Inline Editor (shown when unapproved OR actively editing inline) -->
+                                    <template v-if="isPartner && entry.invoice_id === null && matter.status !== 'Completed' && (entry.approved_hours === null || inlineEditingId === entry.id)">
+                                        <div class="inline-flex items-center justify-end gap-1.5">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                :value="getInlineValue(entry)"
+                                                @input="inlineDrafts[entry.id] = $event.target.value"
+                                                @keyup.enter="saveInlineApproval(entry)"
+                                                @keyup.esc="cancelInlineEdit(entry)"
+                                                class="w-20 rounded border-slate-300 px-2 py-1 text-right text-xs font-mono shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                                            />
+                                            <button
+                                                type="button"
+                                                @click="saveInlineApproval(entry)"
+                                                :disabled="savingInlineId === entry.id"
+                                                title="Approve hours"
+                                                class="rounded bg-emerald-600 px-2 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                                            >
+                                                {{ savingInlineId === entry.id ? '...' : 'Approve' }}
+                                            </button>
+                                            <button
+                                                v-if="inlineEditingId === entry.id"
+                                                type="button"
+                                                @click="cancelInlineEdit(entry)"
+                                                title="Cancel"
+                                                class="rounded bg-slate-200 px-1.5 py-1 text-xs text-slate-600 hover:bg-slate-300"
+                                            >
+                                                &times;
+                                            </button>
+                                        </div>
+                                    </template>
+
+                                    <!-- Already Approved Display -->
+                                    <template v-else-if="entry.approved_hours !== null">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 font-mono">
+                                            {{ Number(entry.approved_hours).toFixed(2) }}
+                                            <button
+                                                v-if="isPartner && entry.invoice_id === null && matter.status !== 'Completed'"
+                                                type="button"
+                                                @click="startInlineEdit(entry)"
+                                                title="Edit approved hours inline"
+                                                class="text-emerald-700 hover:text-emerald-950 underline text-[11px] ml-1"
+                                            >
+                                                Edit
+                                            </button>
+                                        </span>
+                                    </template>
+
+                                    <!-- Non-partner / Closed Matter Pending Display -->
+                                    <template v-else>
+                                        <span class="inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                                            Pending
+                                        </span>
+                                    </template>
+                                </td>
+
+                                <td class="p-3 text-right text-slate-800 font-medium whitespace-nowrap">
+                                    {{ formatCurrency(entry.amount) }}
+                                </td>
+
+                                <!-- Row Actions -->
+                                <td class="p-3 text-right whitespace-nowrap">
+                                    <div v-if="canManageTimeEntry(entry)" class="inline-flex items-center space-x-2 text-xs">
+                                        <button
+                                            type="button"
+                                            @click="openTimeEntryModal(entry)"
+                                            class="text-blue-600 hover:text-blue-800 font-semibold"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            type="button"
+                                            @click="deleteTimeEntry(entry)"
+                                            class="text-red-600 hover:text-red-800 font-semibold"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                    <span v-else-if="entry.approved_hours !== null && !isPartner && entry.invoice_id === null" class="text-xs text-slate-400 italic">
+                                        Locked (Approved)
+                                    </span>
+                                    <span v-else class="text-xs text-slate-400">—</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
                 <p v-else class="text-slate-500 italic">No time logged for this matter yet.</p>
             </div>
 

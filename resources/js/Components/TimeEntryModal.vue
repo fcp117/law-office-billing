@@ -1,71 +1,71 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import { watch, computed } from 'vue';
 
 const props = defineProps({
     show: Boolean,
     matterId: [Number, String],
-    timeEntry: Object, 
-    tasks: { type: Array, default: () => [] },   // Ensure these are passed from Show.vue
-    events: { type: Array, default: () => [] },  // Ensure these are passed from Show.vue
+    timeEntry: Object,
+    tasks: { type: Array, default: () => [] },
+    events: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(['close']);
 
-// Combine Tasks and Events into one list for the dropdown
+const page = usePage();
+const isPartner = computed(() => page.props.auth?.user?.role === 'Partner');
+
 const billableOptions = computed(() => {
     const options = [];
-    props.tasks.forEach(task => options.push({ id: task.id, type: 'App\\Models\\Task', label: `[Task] ${task.title}` }));
-    props.events.forEach(event => options.push({ id: event.id, type: 'App\\Models\\Event', label: `[Event] ${event.title}` }));
+    props.tasks.forEach((task) =>
+        options.push({ id: task.id, type: 'App\\Models\\Task', label: `[Task] ${task.title}` })
+    );
+    props.events.forEach((event) =>
+        options.push({ id: event.id, type: 'App\\Models\\Event', label: `[Event] ${event.title}` })
+    );
     return options;
 });
 
 const form = useForm({
     start_time: '',
-     /* end_time: '', */
     hours: '',
+    approved_hours: '',
     description: '',
-    billable_selection: '', // A temporary field to hold the combined ID and Type
+    billable_selection: '',
     billable_id: null,
     billable_type: null,
 });
 
-const formatDateTime = (dateString) => {
+const formatDateOnly = (dateString) => {
     if (!dateString) return '';
     const d = new Date(dateString);
-    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 };
 
-watch(() => props.timeEntry, (newEntry) => {
-    if (newEntry && newEntry.id) {
-        form.start_time = formatDateTime(newEntry.start_time);
-        form.end_time = formatDateTime(newEntry.end_time);
-        form.hours = newEntry.hours || '';
-        form.description = newEntry.description || '';
-        if (newEntry.billable_id && newEntry.billable_type) {
-            form.billable_selection = `${newEntry.billable_type}|${newEntry.billable_id}`;
-        }
-    } else {
-        form.reset();
-    }
-}, { immediate: true });
-
-/* watch([() => form.start_time, () => form.end_time], ([start, end]) => {
-    if (start && end) {
-        const startDate = new Date(start);
-        const endDate = new Date(end);
-        const diffMs = endDate - startDate;
-        
-        if (diffMs > 0) {
-            form.hours = (diffMs / (1000 * 60 * 60)).toFixed(2);
+watch(
+    () => props.timeEntry,
+    (newEntry) => {
+        if (newEntry && newEntry.id) {
+            form.start_time = formatDateOnly(newEntry.start_time);
+            form.hours = newEntry.hours || '';
+            form.approved_hours =
+                newEntry.approved_hours !== null && newEntry.approved_hours !== undefined
+                    ? newEntry.approved_hours
+                    : newEntry.hours || '';
+            form.description = newEntry.description || '';
+            if (newEntry.billable_id && newEntry.billable_type) {
+                form.billable_selection = `${newEntry.billable_type}|${newEntry.billable_id}`;
+            } else {
+                form.billable_selection = '';
+            }
         } else {
-            form.hours = 0;
+            form.reset();
         }
-    }
-}); */
+    },
+    { immediate: true }
+);
 
 const submit = () => {
-    // Split the selection back into the database columns
     if (form.billable_selection) {
         const [type, id] = form.billable_selection.split('|');
         form.billable_type = type;
@@ -81,7 +81,7 @@ const submit = () => {
             onSuccess: () => emit('close'),
         });
     } else {
-        form.post(route('matters.time-entries.store', props.matterId), { 
+        form.post(route('matters.time-entries.store', props.matterId), {
             preserveScroll: true,
             onSuccess: () => {
                 form.reset();
@@ -112,47 +112,50 @@ const closeModal = () => {
 
             <form @submit.prevent="submit">
                 <div class="p-6 space-y-4">
-                    
-                    <!-- NEW SELECTION DROPDOWN -->
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Link to Task or Event *</label>
                         <select v-model="form.billable_selection" class="w-full rounded-md border-slate-300 shadow-sm bg-white" required>
-                            <option value="" disabled>Select a task or event...</option> <!-- Changed this line -->
+                            <option value="" disabled>Select a task or event...</option>
                             <option v-for="option in billableOptions" :key="option.type + option.id" :value="`${option.type}|${option.id}`">
                                 {{ option.label }}
                             </option>
                         </select>
                         <div v-if="form.errors.billable_selection" class="text-red-500 text-xs mt-1">{{ form.errors.billable_selection }}</div>
                     </div>
-                    
+
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Work Description *</label>
                         <textarea v-model="form.description" rows="3" class="w-full rounded-md border-slate-300 shadow-sm" required></textarea>
+                        <div v-if="form.errors.description" class="text-red-500 text-xs mt-1">{{ form.errors.description }}</div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div :class="isPartner ? 'grid grid-cols-3 gap-4' : 'grid grid-cols-2 gap-4'">
                         <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Start Time *</label>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Date *</label>
                             <input type="date" v-model="form.start_time" class="w-full rounded-md border-slate-300 shadow-sm" required>
+                            <div v-if="form.errors.start_time" class="text-red-500 text-xs mt-1">{{ form.errors.start_time }}</div>
                         </div>
-                        <!-- <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">End Time *</label>
-                            <input type="datetime-local" v-model="form.end_time" class="w-full rounded-md border-slate-300 shadow-sm" required>
-                        </div> -->
+
                         <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Hours *</label>
-                            <input type="number" step="0.25" v-model="form.hours" class="w-full rounded-md border-slate-300 shadow-sm">
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Logged Hours *</label>
+                            <input type="number" step="0.01" min="0.01" v-model="form.hours" class="w-full rounded-md border-slate-300 shadow-sm" required>
                             <div v-if="form.errors.hours" class="text-red-500 text-xs mt-1">{{ form.errors.hours }}</div>
                         </div>
-                    </div>
-                    
-                    <!-- <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Hours</label>
-                        <input type="number" step="0.01" v-model="form.hours" class="w-full rounded-md border-slate-300 shadow-sm bg-slate-50 text-slate-500 font-bold" readonly>
-                        <div v-if="form.errors.hours" class="text-red-500 text-xs mt-1">{{ form.errors.hours }}</div>
-                    </div> -->
 
-                    
+                        <!-- Partner-Only Approved Hours Input -->
+                        <div v-if="isPartner">
+                            <label class="block text-sm font-semibold text-emerald-700 mb-1">Approved Hours</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                v-model="form.approved_hours"
+                                placeholder="Leave blank if pending"
+                                class="w-full rounded-md border-emerald-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                            >
+                            <div v-if="form.errors.approved_hours" class="text-red-500 text-xs mt-1">{{ form.errors.approved_hours }}</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="bg-slate-50 px-6 py-4 border-t flex justify-end space-x-3 mt-auto">

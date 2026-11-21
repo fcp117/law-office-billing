@@ -89,9 +89,9 @@ Route::delete('/tasks/{task}', [App\Http\Controllers\TaskController::class, 'des
 Route::put('/events/{event}', [App\Http\Controllers\EventController::class, 'update'])->name('events.update');
 Route::delete('/events/{event}', [App\Http\Controllers\EventController::class, 'destroy'])->name('events.destroy');
 
-
 Route::post('/matters/{matter}/time-entries', [TimeEntryController::class, 'store'])->name('matters.time-entries.store');
 Route::put('/time-entries/{time_entry}', [TimeEntryController::class, 'update'])->name('time-entries.update');
+Route::patch('/time-entries/{time_entry}/approve', [TimeEntryController::class, 'approve'])->name('time-entries.approve');
 Route::delete('/time-entries/{time_entry}', [TimeEntryController::class, 'destroy'])->name('time-entries.destroy');
 
 Route::middleware('auth')->group(function () {

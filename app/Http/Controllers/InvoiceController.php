@@ -17,6 +17,8 @@ class InvoiceController extends Controller
      */
     public function store(Request $request, Matter $matter)
     {
+        abort_unless($request->user()->role === 'Partner', 403, 'Only Partners can generate invoices.');
+
         $request->validate([
             'issue_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:issue_date',
@@ -62,7 +64,12 @@ class InvoiceController extends Controller
             if ($unbilledEntries->isEmpty()) {
                 return back()->withErrors(['message' => 'Cannot bill: No unbilled time entries found.']);
             }
-            $subtotalFees = $unbilledEntries->sum('amount');
+
+            if ($unbilledEntries->contains(fn ($entry) => $entry->approved_hours === null)) {
+                return back()->withErrors(['message' => 'Cannot bill: All unbilled time entries must have Partner-approved hours before generating an invoice.']);
+            }
+
+            $subtotalFees = $unbilledEntries->sum(fn ($entry) => round((float) $entry->approved_hours * (float) $entry->hourly_rate, 2));
         } else {
             return back()->withErrors(['message' => 'Administrative matters cannot be billed.']);
         }
