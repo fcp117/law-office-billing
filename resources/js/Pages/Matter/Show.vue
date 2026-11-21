@@ -640,65 +640,67 @@ const deleteMatter = () => {
             </div>
 
             <!-- Invoices Section -->
-            <div class="bg-white p-6 rounded-lg shadow mt-6">
+            <div class="bg-white p-6 rounded-lg shadow">
                 <h2 class="text-xl font-bold mb-4 border-b pb-2">Invoices & Payments ({{ matterCurrency }})</h2>
 
-                <table class="w-full text-left" v-if="matter.invoices && matter.invoices.length > 0">
-                    <thead>
-                        <tr class="bg-slate-50 text-slate-600 text-sm">
-                            <th class="p-3">Invoice #</th>
-                            <th class="p-3">Issue Date</th>
-                            <th class="p-3">Status</th>
-                            <th class="p-3">Total Amount</th>
-                            <th class="p-3">Total Payments</th>
-                            <th class="p-3">Balance Due</th>
-                            <th class="p-3 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="invoice in matter.invoices" :key="invoice.id" class="border-b">
-                            <td class="p-3 font-medium">
-                                <Link :href="route('invoices.show', invoice.id)" class="text-blue-600 hover:text-blue-800 hover:underline">
-                                    {{ invoice.invoice_number }}
-                                </Link>
-                            </td>
-                            <td class="p-3 text-slate-600">{{ new Date(invoice.issue_date).toLocaleDateString() }}</td>
-                            <td class="p-3">
-                                <span
-                                    class="px-2 py-1 text-xs font-bold rounded-full"
-                                    :class="{
-                                        'bg-green-100 text-green-800': invoice.status === 'Paid',
-                                        'bg-blue-100 text-blue-800': invoice.status === 'Sent',
-                                        'bg-slate-100 text-slate-800': invoice.status === 'Draft',
-                                    }"
-                                >
-                                    {{ invoice.status }}
-                                </span>
-                            </td>
-                            <td class="p-3 font-medium text-slate-800">
-                                {{ formatCurrency(invoice.total_amount) }}
-                            </td>
-                            <td class="p-3 font-medium text-slate-800">
-                                {{ formatCurrency(invoice.total_payments) }}
-                            </td>
-                            <td class="p-3 font-medium text-slate-800">
-                                {{ formatCurrency(invoice.balance_due) }}
-                            </td>
-                            <td class="p-3 text-right">
-                                <button
-                                    v-if="invoice.status !== 'Paid'"
-                                    @click="openPaymentModal(invoice)"
-                                    class="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded border border-blue-200 hover:bg-blue-600 hover:text-white font-semibold transition"
-                                >
-                                    Record Payment
-                                </button>
-                                <button v-else class="text-sm text-slate-500 hover:text-slate-800 underline transition">
-                                    View Receipt
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div v-if="matter.invoices && matter.invoices.length > 0" class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 text-sm">
+                                <th class="p-3 whitespace-nowrap">Invoice #</th>
+                                <th class="p-3 whitespace-nowrap">Issue Date</th>
+                                <th class="p-3 whitespace-nowrap">Status</th>
+                                <th class="p-3 text-right whitespace-nowrap">Total Amount</th>
+                                <th class="p-3 text-right whitespace-nowrap">Total Payments</th>
+                                <th class="p-3 text-right whitespace-nowrap">Balance Due</th>
+                                <th class="p-3 text-right whitespace-nowrap">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="invoice in matter.invoices" :key="invoice.id" class="border-b hover:bg-slate-50/70">
+                                <td class="p-3 font-medium whitespace-nowrap">
+                                    <Link :href="route('invoices.show', invoice.id)" class="text-blue-600 hover:text-blue-800 hover:underline">
+                                        {{ invoice.invoice_number }}
+                                    </Link>
+                                </td>
+                                <td class="p-3 text-slate-600 whitespace-nowrap">{{ new Date(invoice.issue_date).toLocaleDateString() }}</td>
+                                <td class="p-3 whitespace-nowrap">
+                                    <span
+                                        class="px-2 py-1 text-xs font-bold rounded-full"
+                                        :class="{
+                                            'bg-green-100 text-green-800': invoice.status === 'Paid',
+                                            'bg-blue-100 text-blue-800': invoice.status === 'Sent',
+                                            'bg-slate-100 text-slate-800': invoice.status === 'Draft',
+                                        }"
+                                    >
+                                        {{ invoice.status }}
+                                    </span>
+                                </td>
+                                <td class="p-3 text-right font-medium text-slate-800 whitespace-nowrap">
+                                    {{ formatCurrency(invoice.total_amount) }}
+                                </td>
+                                <td class="p-3 text-right font-medium text-slate-800 whitespace-nowrap">
+                                    {{ formatCurrency(invoice.total_payments) }}
+                                </td>
+                                <td class="p-3 text-right font-medium text-slate-800 whitespace-nowrap">
+                                    {{ formatCurrency(invoice.balance_due) }}
+                                </td>
+                                <td class="p-3 text-right whitespace-nowrap">
+                                    <button
+                                        v-if="invoice.status !== 'Paid'"
+                                        @click="openPaymentModal(invoice)"
+                                        class="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded border border-blue-200 hover:bg-blue-600 hover:text-white font-semibold transition"
+                                    >
+                                        Record Payment
+                                    </button>
+                                    <button v-else class="text-sm text-slate-500 hover:text-slate-800 underline transition">
+                                        View Receipt
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
                 <p v-else class="text-slate-500 italic">No invoices have been generated for this matter yet.</p>
             </div>
 
