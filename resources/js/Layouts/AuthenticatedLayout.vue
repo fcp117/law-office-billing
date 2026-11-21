@@ -1,8 +1,6 @@
 <script setup>
 import { ref } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import Dropdown from '@/Components/Dropdown.vue';
-import DropdownLink from '@/Components/DropdownLink.vue';
 import { Link } from '@inertiajs/vue3';
 
 const showingNavigationDropdown = ref(false);
@@ -47,33 +45,40 @@ const navigation = [
                 <div class="flex h-20 items-center gap-3 border-b border-gray-800 px-5">
                     <Link :href="route('dashboard')" class="flex items-center gap-3">
                         <ApplicationLogo class="block h-10 w-auto fill-current text-gray-200" />
-                        <span class="font-semibold leading-tight text-white">OCBOCC<br><span class="text-large font-medium text-gray-400">Case Management</span></span>
+                        <span class="font-semibold leading-tight text-white">
+                            OCBOCC<br>
+                            <span class="text-sm font-medium text-gray-400">Case Management</span>
+                        </span>
                     </Link>
                 </div>
 
-                <div class="border-t border-gray-100 p-3">
+                <!-- User info & account actions -->
+                <div class="border-b border-gray-800 p-3">
                     <div class="mb-2 px-3">
-                        <div class="truncate text-large font-semibold text-gray-200">
+                        <div class="truncate text-sm font-semibold text-gray-200">
                             {{ $page.props.auth.user?.name || 'Guest' }}
                         </div>
-                        <div class="truncate text-xs text-gray-200">
+                        <div class="truncate text-xs text-gray-400">
                             {{ $page.props.auth.user?.email || '' }}
                         </div>
                     </div>
-                    <Link :href="route('profile.edit')" class="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-gray-50 hover:text-gray-900">
+                    <Link
+                        :href="route('profile.edit')"
+                        class="block rounded-lg px-3 py-2 text-sm text-gray-200 transition hover:bg-gray-50 hover:text-gray-900"
+                    >
                         Profile
                     </Link>
                     <Link
                         :href="route('logout')"
                         method="post"
                         as="button"
-                        class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-50 hover:text-gray-900"
+                        class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-200 transition hover:bg-gray-50 hover:text-gray-900"
                     >
                         Log Out
                     </Link>
                 </div>
 
-                <!-- Desktop sidebar <nav> -->
+                <!-- Desktop sidebar navigation -->
                 <nav class="flex-1 space-y-1 px-3 py-5" aria-label="Main navigation">
                     <template v-for="item in navigation" :key="item.label">
                         <Link
@@ -84,7 +89,6 @@ const navigation = [
                                 ? 'bg-blue-50 text-blue-700'
                                 : 'text-gray-100 hover:bg-gray-50 hover:text-gray-900'"
                         >
-                            <!-- existing icons & label -->
                             <svg v-if="item.icon === 'dashboard'" class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <rect x="3" y="3" width="7" height="7" rx="1" stroke-width="1.8" />
                                 <rect x="14" y="3" width="7" height="7" rx="1" stroke-width="1.8" />
@@ -108,7 +112,7 @@ const navigation = [
                         </Link>
                     </template>
 
-                    <!-- Billing Rates link (outside the v-for loop, matching sidebar <Link> style) -->
+                    <!-- Billing Rates -->
                     <Link
                         v-if="$page.props.auth?.can?.manageRates && $page.props.auth?.user && route().has('users.rates.index')"
                         :href="route('users.rates.index', $page.props.auth.user.id)"
@@ -122,53 +126,49 @@ const navigation = [
                         </svg>
                         <span>Billing Rates</span>
                     </Link>
-                </nav>
 
-                <!-- <div class="border-t border-gray-100 p-3">
-                    <div class="mb-2 px-3">
-                        <div class="truncate text-sm font-semibold text-gray-800">
-                            {{ $page.props.auth.user?.name || 'Guest' }}
-                        </div>
-                        <div class="truncate text-xs text-gray-500">
-                            {{ $page.props.auth.user?.email || '' }}
-                        </div>
-                    </div>
-                    <Link :href="route('profile.edit')" class="block rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
-                        Profile
-                    </Link>
+                    <!-- Billing & A/R Overview (Partner Only) -->
                     <Link
-                        :href="route('logout')"
-                        method="post"
-                        as="button"
-                        class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        v-if="$page.props.auth?.user?.role === 'Partner' && route().has('billing.overview')"
+                        :href="route('billing.overview')"
+                        class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition"
+                        :class="route().current('billing.overview')
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-gray-100 hover:bg-gray-50 hover:text-gray-900'"
                     >
-                        Log Out
+                        <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3v18h18M7 15v3m5-7v7m5-11v11" />
+                        </svg>
+                        <span>Billing &amp; A/R</span>
                     </Link>
-                </div> -->
+                </nav>
             </aside>
 
             <!-- Mobile navigation panel -->
-            <div
-                v-if="showingNavigationDropdown"
-                class="fixed inset-0 z-40 lg:hidden"
-            >
+            <div v-if="showingNavigationDropdown" class="fixed inset-0 z-40 lg:hidden">
                 <button
                     type="button"
                     class="absolute inset-0 h-full w-full bg-gray-900/40"
                     aria-label="Close navigation"
                     @click="showingNavigationDropdown = false"
                 ></button>
+
                 <aside class="relative flex h-full w-72 max-w-[85vw] flex-col bg-white shadow-xl">
                     <div class="flex h-16 items-center justify-between border-b border-gray-100 px-4">
                         <span class="font-semibold text-gray-800">OCBOCC CIMS</span>
-                        <button @click="showingNavigationDropdown = false" class="rounded-md p-2 text-gray-500 hover:bg-gray-100" aria-label="Close navigation">
+                        <button
+                            type="button"
+                            @click="showingNavigationDropdown = false"
+                            class="rounded-md p-2 text-gray-500 hover:bg-gray-100"
+                            aria-label="Close navigation"
+                        >
                             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18" />
                             </svg>
                         </button>
                     </div>
 
-                    <nav class="flex-1 space-y-1 px-3 py-4" aria-label="Mobile navigation">
+                    <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label="Mobile navigation">
                         <template v-for="item in navigation" :key="item.label">
                             <Link
                                 v-if="route().has(item.route)"
@@ -194,20 +194,56 @@ const navigation = [
                         >
                             Billing Rates
                         </Link>
+
+                        <Link
+                            v-if="$page.props.auth?.user?.role === 'Partner' && route().has('billing.overview')"
+                            :href="route('billing.overview')"
+                            @click="showingNavigationDropdown = false"
+                            class="block rounded-lg px-3 py-2.5 text-sm font-medium"
+                            :class="route().current('billing.overview')
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+                        >
+                            Billing &amp; A/R
+                        </Link>
                     </nav>
+
+                    <div class="border-t border-gray-200 p-4">
+                        <div class="mb-2 px-2">
+                            <div class="truncate text-sm font-semibold text-gray-800">
+                                {{ $page.props.auth.user?.name || 'Guest' }}
+                            </div>
+                            <div class="truncate text-xs text-gray-500">
+                                {{ $page.props.auth.user?.email || '' }}
+                            </div>
+                        </div>
+                        <Link
+                            :href="route('profile.edit')"
+                            @click="showingNavigationDropdown = false"
+                            class="block rounded-lg px-2 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        >
+                            Profile
+                        </Link>
+                        <Link
+                            :href="route('logout')"
+                            method="post"
+                            as="button"
+                            class="block w-full rounded-lg px-2 py-2 text-left text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        >
+                            Log Out
+                        </Link>
+                    </div>
                 </aside>
             </div>
 
             <!-- Main content area -->
             <div class="min-w-0 flex-1">
-                <!-- Page heading -->
                 <header v-if="$slots.header" class="border-b border-gray-200 bg-white shadow-sm">
                     <div class="px-4 py-5 sm:px-6 lg:px-8">
                         <slot name="header" />
                     </div>
                 </header>
 
-                <!-- Page content -->
                 <main class="min-w-0">
                     <slot />
                 </main>
