@@ -48,6 +48,7 @@ class MatterController extends Controller
         // Only pass assignable lawyers when the logged-in user is a Partner
         $lawyers = $user->role === 'Partner'
             ? User::whereIn('role', self::ASSIGNABLE_LAWYER_ROLES)
+                ->where('is_active', true)
                 ->orderBy('name', 'asc')
                 ->get(['id', 'name', 'email', 'role'])
             : [];
@@ -67,7 +68,9 @@ class MatterController extends Controller
             'user_id' => [
                 'required',
                 'integer',
-                Rule::exists('users', 'id')->whereIn('role', self::ASSIGNABLE_LAWYER_ROLES),
+                Rule::exists('users', 'id')
+                    ->whereIn('role', self::ASSIGNABLE_LAWYER_ROLES)
+                    ->where('is_active', true),
             ],
         ], [
             'user_id.exists' => 'Only Partners and Associates can be assigned to a matter.',

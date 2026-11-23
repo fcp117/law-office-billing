@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use App\Http\Middleware\IsAdmin;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,13 +16,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            \App\Http\Middleware\EnsureUserIsActive::class,
         ]);
 
-        /* $middleware->alias(['admin' => \App\Http\Middleware\IsAdmin::class]); */
-
-        $middleware->alias(['partner' => \App\Http\Middleware\IsPartner::class]);
-
-        //
+        $middleware->alias([
+            'admin'   => \App\Http\Middleware\IsAdmin::class,
+            'partner' => \App\Http\Middleware\IsPartner::class,
+            'active'  => \App\Http\Middleware\EnsureUserIsActive::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

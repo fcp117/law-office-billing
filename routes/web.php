@@ -15,7 +15,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LawyerController;
 use App\Http\Controllers\LawyerRateController;
 use App\Http\Controllers\BillingOverviewController;
-/* use App\Http\Controllers\AdminController; */
+use App\Http\Controllers\AdminController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -52,6 +52,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/lawyers', [LawyerController::class, 'index'])->name('lawyers');
     Route::put('/lawyers/{user}', [LawyerController::class, 'update'])->name('lawyers.update');
     Route::post('/lawyers', [LawyerController::class, 'store'])->name('lawyers.store');
+    Route::patch('/lawyers/{user}/toggle-active', [LawyerController::class, 'toggleActive'])
+    ->name('lawyers.toggle-active');
     Route::post('/matters/{matter}/lawyers', [MatterController::class, 'assignLawyer'])
         ->name('matters.lawyers.store');
     Route::delete('/matters/{matter}/lawyers/{user}', [MatterController::class, 'removeLawyer'])
@@ -98,7 +100,7 @@ Route::delete('/time-entries/{time_entry}', [TimeEntryController::class, 'destro
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    /* Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy'); */
     Route::get('/users/{user}/rates', [LawyerRateController::class, 'index'])->name('users.rates.index');
     Route::post('/users/{user}/rates', [LawyerRateController::class, 'store'])->name('users.rates.store');
     Route::delete('/lawyer-rates/{lawyerRate}', [LawyerRateController::class, 'destroy'])->name('lawyer-rates.destroy');
@@ -114,5 +116,9 @@ Route::get('/invoices/{invoice}/ledes', [InvoiceController::class, 'downloadLede
 
 Route::get('/matters/{matter}/statement', [MatterController::class, 'statement'])->name('matters.statement');
 Route::get('/matters/{matter}/statement/download', [MatterController::class, 'downloadStatementPdf'])->name('matters.statement.download');
+
+Route::get('/admin', [AdminController::class, 'index'])
+    ->middleware(['auth', 'verified', 'admin'])
+    ->name('admin');
 
 require __DIR__.'/auth.php';
