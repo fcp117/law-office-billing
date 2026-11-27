@@ -46,6 +46,38 @@ const formatCurrency = (amount) => {
         })
     );
 };
+
+const billingPercentage = computed(() => Number(props.invoice.billing_percentage ?? 100));
+const isDiscounted = computed(() => isHourly.value && billingPercentage.value < 100);
+const isPremium = computed(() => isHourly.value && billingPercentage.value > 100);
+
+const tierName = computed(() => {
+    const map = { priority: 'Priority', select: 'Select', preferred: 'Preferred', standard: 'Standard' };
+    return map[props.invoice.billing_tier] || 'Standard';
+});
+
+const netFees = computed(() => Number(props.invoice.total_amount || 0) / 1.12);
+const vatAmount = computed(() => netFees.value * 0.12);
+
+const grossStandardFees = computed(() => {
+    if (!isHourly.value) return netFees.value;
+    return (props.invoice.time_entries || []).reduce((sum, entry) => {
+        const hrs = Number(entry.approved_hours ?? entry.hours ?? 0);
+        return sum + Math.round(hrs * Number(entry.hourly_rate || 0) * 100) / 100;
+    }, 0);
+});
+
+const discountAmount = computed(() => Math.max(0, grossStandardFees.value - netFees.value));
+
+const displayRate = (entry) => {
+    const base = Number(entry.hourly_rate || 0);
+    return isPremium.value ? base * (billingPercentage.value / 100) : base;
+};
+
+const displayLineAmount = (entry) => {
+    const hrs = Number(entry.approved_hours ?? entry.hours ?? 0);
+    return isPremium.value ? hrs * displayRate(entry) : Number(entry.amount || 0);
+};
 </script>
 
 <template>
@@ -171,8 +203,8 @@ const formatCurrency = (amount) => {
                                     <td class="py-2.5 px-3 font-bold text-slate-800">{{ entry.user?.name || 'Lawyer' }}</td>
                                     <td class="py-2.5 px-3 text-slate-600">{{ entry.formatted_description || entry.description }}</td>
                                     <td class="py-2.5 px-3 text-center text-slate-600">{{ Number(entry.approved_hours ?? entry.hours).toFixed(2) }}</td>
-                                    <td v-if="isHourly" class="py-2.5 px-3 text-right text-slate-600">{{ formatCurrency(entry.hourly_rate) }}</td>
-                                    <td v-if="isHourly" class="py-2.5 px-3 text-right font-bold text-slate-900">{{ formatCurrency(entry.amount) }}</td>
+                                    <td v-if="isHourly" class="py-2.5 px-3 text-right text-slate-600">{{ formatCurrency(displayRate(entry)) }}</td>
+                                    <td v-if="isHourly" class="py-2.5 px-3 text-right font-bold text-slate-900">{{ formatCurrency(displayLineAmount(entry)) }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -181,15 +213,31 @@ const formatCurrency = (amount) => {
 
                 <!-- Totals Calculation Block -->
                 <div class="flex justify-end pt-2">
-                    <div class="w-72 border border-slate-200 rounded-md overflow-hidden text-xs">
+                    <div class="w-80 border border-slate-200 rounded-md overflow-hidden text-xs">
                         <table class="w-full border-collapse">
+                            <template v-if="isDiscounted">
+                                <tr>
+                                    <td class="p-2.5 text-slate-600 border-b border-slate-200"><strong>Standard Fees:</strong></td>
+                                    <td class="p-2.5 text-right text-slate-800 border-b border-slate-200">{{ formatCurrency(grossStandardFees) }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2.5 text-emerald-700 border-b border-slate-200">
+                                        <strong>Less: {{ tierName }} Adjustment ({{ (100 - billingPercentage).toFixed(0) }}%):</strong>
+                                    </td>
+                                    <td class="p-2.5 text-right text-emerald-700 border-b border-slate-200">
+                                        ({{ formatCurrency(discountAmount) }})
+                                    </td>
+                                </tr>
+                            </template>
                             <tr>
-                                <td class="p-2.5 text-slate-600 border-b border-slate-200"><strong>Our Fees:</strong></td>
-                                <td class="p-2.5 text-right font-bold text-slate-900 border-b border-slate-200">{{ formatCurrency(invoice.total_amount / 1.12) }}</td>
+                                <td class="p-2.5 text-slate-600 border-b border-slate-200">
+                                    <strong>{{ isDiscounted ? 'Net Professional Fees:' : 'Our Fees:' }}</strong>
+                                </td>
+                                <td class="p-2.5 text-right font-bold text-slate-900 border-b border-slate-200">{{ formatCurrency(netFees) }}</td>
                             </tr>
                             <tr>
                                 <td class="p-2.5 text-slate-600 border-b border-slate-200"><strong>+ 12% VAT:</strong></td>
-                                <td class="p-2.5 text-right font-bold text-slate-900 border-b border-slate-200">{{ formatCurrency((invoice.total_amount / 1.12) * 0.12) }}</td>
+                                <td class="p-2.5 text-right font-bold text-slate-900 border-b border-slate-200">{{ formatCurrency(vatAmount) }}</td>
                             </tr>
                             <tr class="bg-slate-100">
                                 <td class="p-2.5 font-bold text-slate-900"><strong>Total ({{ currency }}):</strong></td>

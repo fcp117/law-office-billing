@@ -35,15 +35,29 @@
         $currency = $invoice->matter->currency ?? 'PHP';
         $symbol = $invoice->matter->currency_symbol;
 
-        // Determine Billing Type Flags
         $billingType = strtolower($invoice->matter->billing_type ?? 'hourly');
         $isHourly = $billingType === 'hourly';
         $isFixedRate = $billingType === 'fixed_rate';
         $isContingency = $billingType === 'contingency';
 
-        // Totals Calculations
+        $billingPercentage = (float) ($invoice->billing_percentage ?? 100.00);
+        $isDiscounted = $isHourly && $billingPercentage < 100;
+        $isPremium = $isHourly && $billingPercentage > 100;
+
+        $tierName = match ($invoice->billing_tier ?? 'standard') {
+            'priority'  => 'Priority',
+            'select'    => 'Select',
+            'preferred' => 'Preferred',
+            default     => 'Standard',
+        };
+
         $ourFees = $invoice->total_amount / 1.12;
         $vat = $ourFees * 0.12;
+
+        $grossStandardFees = $isHourly
+            ? $invoice->timeEntries->sum(fn ($e) => round((float) ($e->approved_hours ?? $e->hours) * (float) $e->hourly_rate, 2))
+            : $ourFees;
+        $discountAmount = max(0, $grossStandardFees - $ourFees);
     @endphp
 
     <!-- Firm Letterhead & Invoice Header -->
@@ -142,8 +156,13 @@
                     <td>{{ $entry->formatted_description }}</td>
                     <td class="text-center">{{ number_format($entry->approved_hours ?? $entry->hours, 2) }}</td>
                     @if($isHourly)
-                        <td class="text-right">{{ $symbol }}{{ number_format($entry->hourly_rate, 2) }}</td>
-                        <td class="text-right bold">{{ $symbol }}{{ number_format($entry->amount, 2) }}</td>
+                        @php
+                            $effectiveHrs = (float) ($entry->approved_hours ?? $entry->hours);
+                            $displayRate = $isPremium ? ((float) $entry->hourly_rate * ($billingPercentage / 100)) : (float) $entry->hourly_rate;
+                            $displayAmt = $isPremium ? round($effectiveHrs * $displayRate, 2) : (float) $entry->amount;
+                        @endphp
+                        <td class="text-right">{{ $symbol }}{{ number_format($displayRate, 2) }}</td>
+                        <td class="text-right bold">{{ $symbol }}{{ number_format($displayAmt, 2) }}</td>
                     @endif
                 </tr>
             @endforeach
@@ -151,10 +170,20 @@
     </table>
 
     <!-- Totals Calculations -->
-    <div class="totals-section">
+    <div class="totals-section" style="width: 45%;">
         <table class="totals-table">
+            @if($isDiscounted)
+                <tr>
+                    <td><strong>Standard Fees:</strong></td>
+                    <td class="text-right">{{ $symbol }}{{ number_format($grossStandardFees, 2) }}</td>
+                </tr>
+                <tr>
+                    <td style="color: #047857;"><strong>Less: {{ $tierName }} Adjustment ({{ number_format(100 - $billingPercentage, 0) }}%):</strong></td>
+                    <td class="text-right" style="color: #047857;">({{ $symbol }}{{ number_format($discountAmount, 2) }})</td>
+                </tr>
+            @endif
             <tr>
-                <td><strong>Our Fees:</strong></td>
+                <td><strong>{{ $isDiscounted ? 'Net Professional Fees:' : 'Our Fees:' }}</strong></td>
                 <td class="text-right bold">{{ $symbol }}{{ number_format($ourFees, 2) }}</td>
             </tr>
             <tr>

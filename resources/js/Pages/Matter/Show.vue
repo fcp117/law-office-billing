@@ -315,6 +315,17 @@ const deleteMatter = () => {
                                         {{ formatCurrency(matter.settlement_judgment) }}
                                     </span>
                                 </template>
+
+                                <!-- Inside the Billing Information Summary box -->
+                                <template v-if="matter.billing_type === 'hourly'">
+                                    <span class="text-gray-400 border-l border-slate-500 pl-4">Rate Tier:</span>
+                                    <span
+                                        class="ml-1 px-2 py-0.5 rounded text-xs font-semibold"
+                                        :class="Number(matter.billing_percentage ?? 100) < 100 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-slate-600 text-white'"
+                                    >
+                                        {{ matter.billing_tier_label || 'Standard (100%)' }}
+                                    </span>
+                                </template>
                             </div>
 
                             <!-- Edit Button -->

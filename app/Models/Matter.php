@@ -8,6 +8,13 @@ class Matter extends Model
 {
     public const CURRENCIES = ['PHP', 'USD'];
 
+    public const BILLING_TIERS = [
+        'priority'  => ['label' => 'Priority (120%)', 'percentage' => 120.00],
+        'standard'  => ['label' => 'Standard (100%)', 'percentage' => 100.00],
+        'select'    => ['label' => 'Select (80%)', 'percentage' => 80.00],
+        'preferred' => ['label' => 'Preferred (70%)', 'percentage' => 70.00],
+    ];
+
     protected $fillable = [
         'name',
         'description',
@@ -24,6 +31,8 @@ class Matter extends Model
         'closing_date',
         'remarks',
         'billing_type',
+        'billing_tier',
+        'billing_percentage',
         'currency',
         'contingency_percentage',
         'settlement_judgment',
@@ -34,12 +43,13 @@ class Matter extends Model
 
     protected $appends = [
         'currency_symbol',
+        'billing_tier_label',
     ];
 
-    // Ensures these columns are treated as Dates, not just strings
     protected $casts = [
         'start_date' => 'date',
         'closing_date' => 'date',
+        'billing_percentage' => 'decimal:2',
         'contingency_percentage' => 'decimal:2',
         'settlement_judgment' => 'decimal:2',
         'fixed_fee_amount' => 'decimal:2',
@@ -50,13 +60,29 @@ class Matter extends Model
         return ($this->currency ?? 'PHP') === 'PHP' ? '₱' : '$';
     }
 
-    // Relationships
+    public function getBillingTierLabelAttribute(): string
+    {
+        $tier = $this->billing_tier ?? 'standard';
+        return self::BILLING_TIERS[$tier]['label']
+            ?? ('Custom (' . number_format((float) ($this->billing_percentage ?? 100), 0) . '%)');
+    }
+
+    public function getBillingTierNameAttribute(): string
+    {
+        $tier = $this->billing_tier ?? 'standard';
+        return match ($tier) {
+            'priority'  => 'Priority',
+            'select'    => 'Select',
+            'preferred' => 'Preferred',
+            default     => 'Standard',
+        };
+    }
+    
     public function client()
     {
         return $this->belongsTo(Client::class);
     }
 
-    // Audit Trail Relationships
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -67,7 +93,6 @@ class Matter extends Model
         return $this->belongsTo(User::class, 'modified_by');
     }
 
-    // The Many-to-Many relationship for assigned lawyers
     public function users()
     {
         return $this->belongsToMany(User::class)
@@ -75,7 +100,6 @@ class Matter extends Model
                     ->withTimestamps();
     }
 
-    // Links to the Events and Tasks architecture
     public function events()
     {
         return $this->hasMany(Event::class);
@@ -102,5 +126,15 @@ class Matter extends Model
             $totalPaid = $invoice->payments->sum('amount');
             return max(0, $invoice->total_amount - $totalPaid);
         });
+    }
+
+    public function applyBillingTier(float $amount): float
+    {
+        if (strtolower($this->billing_type ?? '') !== 'hourly') {
+            return round($amount, 2);
+        }
+
+        $percentage = (float) ($this->billing_percentage ?? 100.00);
+        return round($amount * ($percentage / 100), 2);
     }
 }

@@ -47,7 +47,10 @@ class DashboardController extends Controller
         // -----------------------------------------------------------------
         // 1. TIME ENTRIES THIS MONTH (Hours for all types; $ for Hourly only)
         // -----------------------------------------------------------------
-        $entries = TimeEntry::with('matter:id,billing_type,currency')
+        $entries = TimeEntry::with([
+            'matter:id,billing_type,billing_tier,billing_percentage,currency',
+            'invoice:id,billing_percentage',
+        ])
             ->where('user_id', $targetUser->id)
             ->whereBetween('start_time', [$startOfMonth, $endOfMonth])
             ->get();
@@ -78,7 +81,13 @@ class DashboardController extends Controller
                 $effectiveHours = $entry->approved_hours !== null
                     ? (float) $entry->approved_hours
                     : $hours;
-                $amount = round($effectiveHours * (float) $entry->hourly_rate, 2);
+                $baseAmount = round($effectiveHours * (float) $entry->hourly_rate, 2);
+
+                $tierPct = $entry->invoice_id !== null
+                    ? (float) ($entry->invoice->billing_percentage ?? $entry->matter->billing_percentage ?? 100.00)
+                    : (float) ($entry->matter->billing_percentage ?? 100.00);
+
+                $amount = round($baseAmount * ($tierPct / 100), 2);
 
                 if ($entry->invoice_id !== null) {
                     $kpis['aggregate']['billed'][$currency] += $amount;

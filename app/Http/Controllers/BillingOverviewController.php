@@ -56,10 +56,12 @@ class BillingOverviewController extends Controller
                     continue;
                 }
 
+                $tierMultiplier = ((float) ($matter->billing_percentage ?? 100.00)) / 100;
+
                 foreach ($entries as $entry) {
                     $logged = (float) $entry->hours;
                     $effectiveHours = $entry->approved_hours !== null ? (float) $entry->approved_hours : $logged;
-                    $lineAmount = round($effectiveHours * (float) $entry->hourly_rate, 2);
+                    $lineAmount = round($effectiveHours * (float) $entry->hourly_rate * $tierMultiplier, 2);
 
                     $unbilledAmount += $lineAmount;
                     $totalLoggedHours += $logged;
@@ -117,6 +119,9 @@ class BillingOverviewController extends Controller
                 'name' => $matter->name,
                 'client_name' => $matter->client?->name ?? 'N/A',
                 'billing_type' => $billingType,
+                'billing_tier' => $matter->billing_tier ?? 'standard',
+                'billing_tier_label' => $matter->billing_tier_label,
+                'billing_percentage' => (float) ($matter->billing_percentage ?? 100.00),
                 'status' => $matter->status,
                 'currency' => $currency,
                 'lawyers' => $matter->users->pluck('name')->values(),
@@ -236,18 +241,20 @@ class BillingOverviewController extends Controller
             ->orderBy('start_time', 'asc')
             ->get()
             ->map(function ($entry) {
+                $tierPct = (float) ($entry->matter?->billing_percentage ?? 100.00);
                 return [
                     'id' => $entry->id,
                     'matter_id' => $entry->matter_id,
                     'matter_name' => $entry->matter?->name ?? 'N/A',
                     'client_name' => $entry->matter?->client?->name ?? 'N/A',
                     'currency' => $entry->matter?->currency ?? 'PHP',
+                    'billing_percentage' => $tierPct,
                     'lawyer_name' => $entry->user?->name ?? 'Unknown',
                     'start_time' => $entry->start_time?->toDateString(),
                     'formatted_description' => $entry->formatted_description,
                     'hours' => (float) $entry->hours,
                     'hourly_rate' => (float) $entry->hourly_rate,
-                    'amount' => round((float) $entry->hours * (float) $entry->hourly_rate, 2),
+                    'amount' => round((float) $entry->hours * (float) $entry->hourly_rate * ($tierPct / 100), 2),
                 ];
             })
             ->values();

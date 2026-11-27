@@ -39,6 +39,8 @@ class InvoiceController extends Controller
         }
 
         $subtotalFees = 0;
+        $tierKey = 'standard';
+        $billingPercentage = 100.00;
 
         // 2. Calculate Subtotal based on Matter Billing Type
         if ($billingType === 'fixed_rate') {
@@ -69,22 +71,30 @@ class InvoiceController extends Controller
                 return back()->withErrors(['message' => 'Cannot bill: All unbilled time entries must have Partner-approved hours before generating an invoice.']);
             }
 
-            $subtotalFees = $unbilledEntries->sum(fn ($entry) => round((float) $entry->approved_hours * (float) $entry->hourly_rate, 2));
+            $tierKey = $matter->billing_tier ?? 'standard';
+            $billingPercentage = (float) ($matter->billing_percentage ?? 100.00);
+
+            $grossFees = $unbilledEntries->sum(
+                fn ($entry) => round((float) $entry->approved_hours * (float) $entry->hourly_rate, 2)
+            );
+            $subtotalFees = $matter->applyBillingTier($grossFees);
         } else {
             return back()->withErrors(['message' => 'Administrative matters cannot be billed.']);
         }
 
-        // 3. Finalize Calculations
-        $vatAmount = $subtotalFees * 0.12; // 12% VAT
-        $totalAmount = $subtotalFees + $vatAmount;
+        // 3. Finalize Calculations (12% VAT on Net Tier-Adjusted Subtotal)
+        $vatAmount = round($subtotalFees * 0.12, 2);
+        $totalAmount = round($subtotalFees + $vatAmount, 2);
 
         $invoiceNumber = 'INV-' . date('Ymd') . '-' . rand(1000, 9999);
 
         // 4. Create the Invoice and Link Entries
-        DB::transaction(function () use ($request, $matter, $totalAmount, $invoiceNumber, $billingType) {
+        DB::transaction(function () use ($request, $matter, $totalAmount, $invoiceNumber, $billingType, $tierKey, $billingPercentage) {
             $invoice = Invoice::create([
                 'matter_id' => $matter->id,
                 'invoice_number' => $invoiceNumber,
+                'billing_tier' => $tierKey,
+                'billing_percentage' => $billingPercentage,
                 'issue_date' => Carbon::parse($request->issue_date),
                 'due_date' => Carbon::parse($request->due_date),
                 'total_amount' => $totalAmount,
@@ -93,7 +103,6 @@ class InvoiceController extends Controller
                 'created_by' => $request->user()->id,
             ]);
 
-            // Link unbilled time entries to clear them from the queue
             $matter->timeEntries()->whereNull('invoice_id')->update([
                 'invoice_id' => $invoice->id,
                 'modified_by' => $request->user()->id,

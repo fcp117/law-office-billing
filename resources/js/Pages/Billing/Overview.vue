@@ -441,8 +441,16 @@ const approveEntry = (entry) => {
                                             </Link>
                                             <div class="text-xs text-slate-400">{{ item.lawyers.join(', ') }}</div>
                                         </td>
+                                        <!-- Replace the Type cell in Tab 1 (around line 397) -->
                                         <td class="p-3 capitalize text-xs text-slate-600 whitespace-nowrap">
-                                            {{ item.billing_type.replace('_', ' ') }}
+                                            <div>{{ item.billing_type.replace('_', ' ') }}</div>
+                                            <span
+                                                v-if="item.billing_type === 'hourly' && Number(item.billing_percentage ?? 100) !== 100"
+                                                class="mt-0.5 inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                                                :class="Number(item.billing_percentage) > 100 ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'"
+                                            >
+                                                {{ item.billing_tier_label }}
+                                            </span>
                                         </td>
                                         <td class="p-3 text-slate-600 whitespace-nowrap">{{ formatDate(item.oldest_date) }}</td>
                                         <td class="p-3 whitespace-nowrap">

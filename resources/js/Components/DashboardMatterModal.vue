@@ -22,6 +22,7 @@ const emptyMatter = () => ({
     authority: '',
     status: 'Active',
     billing_type: 'hourly',
+    billing_tier: 'standard',
     currency: 'PHP',
     fixed_fee_amount: '',
     contingency_percentage: '',
@@ -53,6 +54,7 @@ watch(
                 fixed_fee_amount: matter.fixed_fee_amount ?? '',
                 contingency_percentage: matter.contingency_percentage ?? '',
                 settlement_judgment: matter.settlement_judgment ?? '',
+                billing_tier: matter.billing_tier ?? 'standard',
             });
         } else {
             form.defaults(emptyMatter());
@@ -158,6 +160,20 @@ const closeModal = () => {
                             </div>
                             <div v-if="form.errors.currency" class="text-red-500 text-xs mt-1">{{ form.errors.currency }}</div>
                         </div>
+                    </div>
+
+                    <div v-if="form.billing_type === 'hourly'">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Billing Rate Tier</label>
+                        <select v-model="form.billing_tier" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                            <option value="priority">Priority (120%)</option>
+                            <option value="standard">Standard (100% Rack Rate)</option>
+                            <option value="select">Select (80%)</option>
+                            <option value="preferred">Preferred (70%)</option>
+                        </select>
+                        <p class="mt-1 text-xs text-slate-500">
+                            Lawyers log standard hours; the tier percentage is applied automatically upon invoicing.
+                        </p>
+                        <div v-if="form.errors.billing_tier" class="text-red-500 text-xs mt-1">{{ form.errors.billing_tier }}</div>
                     </div>
 
                     <div v-if="form.billing_type === 'fixed_rate'">

@@ -104,20 +104,27 @@ class MatterController extends Controller
 
     public function store(Request $request)
     {
-        // 1. Validate the incoming data from the Vue modal
+        // Inside store(Request $request):
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
             'name' => 'required|string|max:255',
             'authority' => 'nullable|string|max:255',
             'status' => 'required|string|in:Active,Pending,On Hold,Completed',
             'billing_type' => 'required|string|in:hourly,fixed_rate,contingency,administrative',
+            'billing_tier' => ['nullable', 'string', Rule::in(array_keys(Matter::BILLING_TIERS))],
             'currency' => 'required|string|in:PHP,USD',
             'fixed_fee_amount' => 'nullable|numeric|min:0',
             'contingency_percentage' => 'nullable|numeric|min:0',
             'settlement_judgment' => 'nullable|numeric|min:0',
         ]);
 
-        // 2. Create the new Matter in the database
+        $tierKey = $validated['billing_type'] === 'hourly'
+            ? ($validated['billing_tier'] ?? 'standard')
+            : 'standard';
+
+        $validated['billing_tier'] = $tierKey;
+        $validated['billing_percentage'] = Matter::BILLING_TIERS[$tierKey]['percentage'];
+
         $matter = Matter::create($validated);
 
         $user = $request->user();
@@ -188,11 +195,19 @@ class MatterController extends Controller
             'authority' => 'nullable|string|max:255',
             'status' => 'required|string|in:Active,Pending,On Hold,Completed',
             'billing_type' => 'required|string|in:hourly,fixed_rate,contingency,administrative',
+            'billing_tier' => ['nullable', 'string', Rule::in(array_keys(Matter::BILLING_TIERS))],
             'currency' => 'required|string|in:PHP,USD',
             'fixed_fee_amount' => 'nullable|numeric|min:0',
             'contingency_percentage' => 'nullable|numeric|min:0',
             'settlement_judgment' => 'nullable|numeric|min:0',
         ]);
+
+        $tierKey = $validated['billing_type'] === 'hourly'
+            ? ($validated['billing_tier'] ?? 'standard')
+            : 'standard';
+
+        $validated['billing_tier'] = $tierKey;
+        $validated['billing_percentage'] = Matter::BILLING_TIERS[$tierKey]['percentage'];
 
         $matter->update($validated);
 
