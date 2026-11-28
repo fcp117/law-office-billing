@@ -527,11 +527,24 @@ const approveEntry = (entry) => {
                                                 {{ inv.invoice_number }}
                                             </Link>
                                         </td>
-                                        <td class="p-3">
+                                        <!-- <td class="p-3">
                                             <div class="font-medium text-slate-800">{{ inv.client_name }}</div>
                                             <Link :href="route('matters.show', inv.matter_id)" class="text-xs text-slate-500 hover:underline">
                                                 {{ inv.matter_name }}
                                             </Link>
+                                        </td> -->
+                                        <td class="p-3">
+                                            <div class="font-medium text-slate-800">{{ inv.client_name }}</div>
+                                            <Link
+                                                v-if="inv.matter_id"
+                                                :href="route('matters.show', inv.matter_id)"
+                                                class="text-xs text-slate-500 hover:underline"
+                                            >
+                                                {{ inv.matter_name }}
+                                            </Link>
+                                            <span v-else class="text-xs text-slate-400">
+                                                {{ inv.matter_name }}
+                                            </span>
                                         </td>
                                         <td class="p-3 text-slate-600 whitespace-nowrap">{{ formatDate(inv.issue_date) }}</td>
                                         <td class="p-3 text-slate-600 whitespace-nowrap">{{ formatDate(inv.due_date) }}</td>

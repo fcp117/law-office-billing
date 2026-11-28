@@ -123,7 +123,7 @@ class InvoiceController extends Controller
      */
     public function show(Invoice $invoice)
     {
-        $invoice->load(['matter.client', 'timeEntries.user', 'timeEntries.billable', 'creator']);
+        $invoice->load(['matter.client', 'timeEntries.user', 'timeEntries.billable', 'creator', 'client', 'items.beneficiary']);
 
         return Inertia::render('Invoices/Show', [
             'invoice' => $invoice,
@@ -132,7 +132,7 @@ class InvoiceController extends Controller
 
     public function downloadPdf(Invoice $invoice)
     {
-        $invoice->load(['matter.client', 'timeEntries.user', 'timeEntries.billable', 'creator']);
+        $invoice->load(['matter.client', 'timeEntries.user', 'timeEntries.billable', 'creator', 'client', 'items.beneficiary']);
 
         $pdf = Pdf::loadView('invoices.pdf', compact('invoice'));
 

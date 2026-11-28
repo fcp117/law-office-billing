@@ -148,7 +148,7 @@ class BillingOverviewController extends Controller
         $matterCollectionsMap = [];
 
         foreach ($invoices as $invoice) {
-            $currency = $invoice->matter?->currency ?? 'PHP';
+            $currency = $invoice->currency ?? $invoice->matter?->currency ?? 'PHP';
             $totalAmount = (float) $invoice->total_amount;
             $paidAmount = (float) $invoice->payments->sum('amount');
             $balanceDue = max(0, round($totalAmount - $paidAmount, 2));
@@ -159,7 +159,8 @@ class BillingOverviewController extends Controller
                     $matterCollectionsMap[$matterId] = [
                         'id' => $matterId,
                         'name' => $invoice->matter?->name ?? 'N/A',
-                        'client_name' => $invoice->matter?->client?->name ?? 'N/A',
+                        //'client_name' => $invoice->matter?->client?->name ?? 'N/A',
+                        'client_name' => $invoice->client?->name ?? $invoice->matter?->client?->name ?? 'N/A',
                         'currency' => $currency,
                         'status' => $invoice->matter?->status ?? 'Active',
                         'invoice_count' => 0,

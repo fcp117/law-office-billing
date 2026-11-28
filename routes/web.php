@@ -16,6 +16,7 @@ use App\Http\Controllers\LawyerController;
 use App\Http\Controllers\LawyerRateController;
 use App\Http\Controllers\BillingOverviewController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\SpecialBillingController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -58,6 +59,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('matters.lawyers.store');
     Route::delete('/matters/{matter}/lawyers/{user}', [MatterController::class, 'removeLawyer'])
         ->name('matters.lawyers.destroy');
+    Route::get('/special-billing', [SpecialBillingController::class, 'index'])->name('special-billing.index');
+    Route::post('/special-billing/arrangements', [SpecialBillingController::class, 'store'])->name('special-billing.store');
+    Route::put('/special-billing/arrangements/{arrangement}', [SpecialBillingController::class, 'update'])->name('special-billing.update');
+    Route::delete('/special-billing/arrangements/{arrangement}', [SpecialBillingController::class, 'destroy'])->name('special-billing.destroy');
+    Route::post('/special-billing/generate-queue', [SpecialBillingController::class, 'generateQueue'])->name('special-billing.generate');
+    Route::patch('/special-billing/invoices/{invoice}/send', [SpecialBillingController::class, 'approveAndSend'])->name('special-billing.send');
+    Route::patch('/special-billing/items/{item}/remit', [SpecialBillingController::class, 'remitBeneficiary'])->name('special-billing.remit');
 });
 
 Route::delete('/matters/{matter}', [MatterController::class, 'destroy'])

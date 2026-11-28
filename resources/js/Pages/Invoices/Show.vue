@@ -10,14 +10,79 @@ const props = defineProps({
     },
 });
 
-const currency = computed(() => props.invoice.matter?.currency || 'PHP');
+const isSpecialBilling = computed(() => props.invoice.billing_source === 'special_billing');
+
+const clientName = computed(
+    () => props.invoice.client?.name || props.invoice.matter?.client?.name || 'Valued Client'
+);
+
+const matterTitle = computed(() => {
+    if (props.invoice.matter?.name) return props.invoice.matter.name;
+    if (isSpecialBilling.value) {
+        return props.invoice.period_key
+            ? `Special Retainer / Recurring Billing (${props.invoice.period_key})`
+            : 'Special Retainer / Recurring Billing';
+    }
+    return 'N/A';
+});
+
+const currency = computed(() => props.invoice.currency || props.invoice.matter?.currency || 'PHP');
 const currencySymbol = computed(() => (currency.value === 'PHP' ? '₱' : '$'));
 
-// Determine Billing Type Flags
+// Matter Billing Type Flags (ignored for Special Billing)
 const billingType = computed(() => props.invoice.matter?.billing_type?.toLowerCase() || 'hourly');
-const isHourly = computed(() => billingType.value === 'hourly');
-const isFixedRate = computed(() => billingType.value === 'fixed_rate');
-const isContingency = computed(() => billingType.value === 'contingency');
+const isHourly = computed(() => !isSpecialBilling.value && billingType.value === 'hourly');
+const isFixedRate = computed(() => !isSpecialBilling.value && billingType.value === 'fixed_rate');
+const isContingency = computed(() => !isSpecialBilling.value && billingType.value === 'contingency');
+
+// Tier Calculations (for Hourly Matter Invoices)
+const billingPercentage = computed(() => Number(props.invoice.billing_percentage ?? 100));
+const isDiscounted = computed(() => isHourly.value && billingPercentage.value < 100);
+const isPremium = computed(() => isHourly.value && billingPercentage.value > 100);
+
+const tierName = computed(() => {
+    const map = { priority: 'Priority', select: 'Select', preferred: 'Preferred', standard: 'Standard' };
+    return map[props.invoice.billing_tier] || 'Standard';
+});
+
+// Totals Calculations
+const specialBaseFees = computed(() =>
+    (props.invoice.items || []).reduce((sum, item) => sum + Number(item.amount || 0), 0)
+);
+
+const specialVatAmount = computed(() =>
+    (props.invoice.items || []).reduce((sum, item) => sum + Number(item.vat_amount || 0), 0)
+);
+
+const netFees = computed(() => {
+    if (isSpecialBilling.value) return specialBaseFees.value;
+    return Number(props.invoice.total_amount || 0) / 1.12;
+});
+
+const vatAmount = computed(() => {
+    if (isSpecialBilling.value) return specialVatAmount.value;
+    return netFees.value * 0.12;
+});
+
+const grossStandardFees = computed(() => {
+    if (!isHourly.value) return netFees.value;
+    return (props.invoice.time_entries || []).reduce((sum, entry) => {
+        const hrs = Number(entry.approved_hours ?? entry.hours ?? 0);
+        return sum + Math.round(hrs * Number(entry.hourly_rate || 0) * 100) / 100;
+    }, 0);
+});
+
+const discountAmount = computed(() => Math.max(0, grossStandardFees.value - netFees.value));
+
+const displayRate = (entry) => {
+    const base = Number(entry.hourly_rate || 0);
+    return isPremium.value ? base * (billingPercentage.value / 100) : base;
+};
+
+const displayLineAmount = (entry) => {
+    const hrs = Number(entry.approved_hours ?? entry.hours ?? 0);
+    return isPremium.value ? hrs * displayRate(entry) : Number(entry.amount || 0);
+};
 
 const formatLongDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -46,38 +111,6 @@ const formatCurrency = (amount) => {
         })
     );
 };
-
-const billingPercentage = computed(() => Number(props.invoice.billing_percentage ?? 100));
-const isDiscounted = computed(() => isHourly.value && billingPercentage.value < 100);
-const isPremium = computed(() => isHourly.value && billingPercentage.value > 100);
-
-const tierName = computed(() => {
-    const map = { priority: 'Priority', select: 'Select', preferred: 'Preferred', standard: 'Standard' };
-    return map[props.invoice.billing_tier] || 'Standard';
-});
-
-const netFees = computed(() => Number(props.invoice.total_amount || 0) / 1.12);
-const vatAmount = computed(() => netFees.value * 0.12);
-
-const grossStandardFees = computed(() => {
-    if (!isHourly.value) return netFees.value;
-    return (props.invoice.time_entries || []).reduce((sum, entry) => {
-        const hrs = Number(entry.approved_hours ?? entry.hours ?? 0);
-        return sum + Math.round(hrs * Number(entry.hourly_rate || 0) * 100) / 100;
-    }, 0);
-});
-
-const discountAmount = computed(() => Math.max(0, grossStandardFees.value - netFees.value));
-
-const displayRate = (entry) => {
-    const base = Number(entry.hourly_rate || 0);
-    return isPremium.value ? base * (billingPercentage.value / 100) : base;
-};
-
-const displayLineAmount = (entry) => {
-    const hrs = Number(entry.approved_hours ?? entry.hours ?? 0);
-    return isPremium.value ? hrs * displayRate(entry) : Number(entry.amount || 0);
-};
 </script>
 
 <template>
@@ -86,9 +119,17 @@ const displayLineAmount = (entry) => {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex justify-between items-center print:hidden">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    Invoice: {{ invoice.invoice_number }}
-                </h2>
+                <div class="flex items-center gap-3">
+                    <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                        Invoice: {{ invoice.invoice_number }}
+                    </h2>
+                    <span
+                        v-if="invoice.status === 'Queued'"
+                        class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800"
+                    >
+                        Queued (Draft Review)
+                    </span>
+                </div>
                 <div class="space-x-3">
                     <a
                         :href="route('invoices.download', invoice.id)"
@@ -97,6 +138,7 @@ const displayLineAmount = (entry) => {
                         Download PDF
                     </a>
                     <a
+                        v-if="!isSpecialBilling"
                         :href="route('invoices.ledes', invoice.id)"
                         class="inline-flex items-center bg-indigo-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-indigo-700 transition shadow-sm"
                     >
@@ -125,7 +167,7 @@ const displayLineAmount = (entry) => {
                         </td>
                         <td class="align-top text-right">
                             <div class="text-xl font-bold uppercase text-slate-900 tracking-wide mb-1">
-                                INVOICE
+                                {{ isSpecialBilling ? 'STATEMENT OF ACCOUNT' : 'INVOICE' }}
                             </div>
                             <div class="text-xs text-slate-500 leading-relaxed">
                                 <strong>Invoice No:</strong> {{ invoice.invoice_number }}<br>
@@ -142,15 +184,21 @@ const displayLineAmount = (entry) => {
                     <table class="w-full border-collapse text-xs">
                         <tr>
                             <td class="font-bold text-slate-700 py-1" style="width: 15%;">FOR:</td>
-                            <td class="text-slate-800 py-1" style="width: 35%;">{{ invoice.matter?.client?.name || 'Valued Client' }}</td>
-                            <td class="font-bold text-slate-700 py-1" style="width: 15%;">MATTER FILE:</td>
-                            <td class="text-slate-800 py-1" style="width: 35%;">{{ invoice.matter?.name || 'N/A' }}</td>
+                            <td class="text-slate-800 py-1" style="width: 35%;">{{ clientName }}</td>
+                            <td class="font-bold text-slate-700 py-1" style="width: 15%;">
+                                {{ isSpecialBilling ? 'ACCOUNT / FILE:' : 'MATTER FILE:' }}
+                            </td>
+                            <td class="text-slate-800 py-1" style="width: 35%;">{{ matterTitle }}</td>
                         </tr>
                         <tr>
                             <td class="font-bold text-slate-700 py-1">ATTENTION:</td>
                             <td class="text-slate-800 py-1">Client Billing Department</td>
-                            <td class="font-bold text-slate-700 py-1">AUTHORITY:</td>
-                            <td class="text-slate-800 py-1">{{ invoice.matter?.authority || 'N/A' }}</td>
+                            <td class="font-bold text-slate-700 py-1">
+                                {{ isSpecialBilling ? 'BILLING PERIOD:' : 'AUTHORITY:' }}
+                            </td>
+                            <td class="text-slate-800 py-1">
+                                {{ isSpecialBilling ? (invoice.period_key || 'Recurring') : (invoice.matter?.authority || 'N/A') }}
+                            </td>
                         </tr>
                     </table>
                 </div>
@@ -179,8 +227,44 @@ const displayLineAmount = (entry) => {
                     </table>
                 </div>
 
-                <!-- Professional Services Section -->
-                <div>
+                <!-- SPECIAL BILLING ITEMS TABLE -->
+                <div v-if="isSpecialBilling">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-3">
+                        Schedule of Fees ({{ currency }})
+                    </h4>
+
+                    <div class="overflow-x-auto border border-slate-200 rounded-md">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-slate-900 text-white uppercase tracking-wider">
+                                    <th class="py-2.5 px-3" style="width: 55%;">Particulars / Description</th>
+                                    <th class="py-2.5 px-3 text-center" style="width: 15%;">Tax Status</th>
+                                    <th class="py-2.5 px-3 text-right" style="width: 15%;">Fee Amount</th>
+                                    <th class="py-2.5 px-3 text-right" style="width: 15%;">12% VAT</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200">
+                                <tr v-for="item in invoice.items" :key="item.id" class="hover:bg-slate-50">
+                                    <td class="py-2.5 px-3 text-slate-800 font-medium">
+                                        {{ item.description }}
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center text-slate-600">
+                                        {{ Number(item.vat_amount || 0) > 0 ? 'VATable' : 'Non-VAT' }}
+                                    </td>
+                                    <td class="py-2.5 px-3 text-right font-bold text-slate-900">
+                                        {{ formatCurrency(item.amount) }}
+                                    </td>
+                                    <td class="py-2.5 px-3 text-right text-slate-600">
+                                        {{ formatCurrency(item.vat_amount) }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- REGULAR MATTER TIME ENTRIES TABLE -->
+                <div v-else>
                     <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-3">
                         Professional Services Rendered ({{ currency }})
                     </h4>

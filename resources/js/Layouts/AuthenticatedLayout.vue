@@ -141,6 +141,20 @@ const navigation = [
                         </svg>
                         <span>Billing &amp; A/R</span>
                     </Link>
+
+                    <Link
+                        v-if="$page.props.auth?.user?.role === 'Partner' && route().has('special-billing.index')"
+                        :href="route('special-billing.index')"
+                        class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition"
+                        :class="route().current('special-billing.*')
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-gray-100 hover:bg-gray-50 hover:text-gray-900'"
+                    >
+                        <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" />
+                        </svg>
+                        <span>Special Billing</span>
+                    </Link>
                 </nav>
             </aside>
 
@@ -205,6 +219,18 @@ const navigation = [
                                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
                         >
                             Billing &amp; A/R
+                        </Link>
+
+                        <Link
+                            v-if="$page.props.auth?.user?.role === 'Partner' && route().has('special-billing.index')"
+                            :href="route('special-billing.index')"
+                            @click="showingNavigationDropdown = false"
+                            class="block rounded-lg px-3 py-2.5 text-sm font-medium"
+                            :class="route().current('special-billing.*')
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+                        >
+                            Special Billing
                         </Link>
                     </nav>
 

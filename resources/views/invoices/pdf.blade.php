@@ -22,7 +22,7 @@
         .text-center { text-align: center; }
         .bold { font-weight: bold; }
 
-        .totals-section { margin-top: 20px; width: 40%; float: right; }
+        .totals-section { margin-top: 20px; width: 45%; float: right; }
         .totals-table { width: 100%; border-collapse: collapse; }
         .totals-table td { padding: 6px 8px; font-size: 11px; border-bottom: 1px solid #e2e8f0; }
 
@@ -32,14 +32,27 @@
 <body>
 
     @php
-        $currency = $invoice->matter->currency ?? 'PHP';
-        $symbol = $invoice->matter->currency_symbol;
+        $isSpecialBilling = ($invoice->billing_source ?? 'matter') === 'special_billing';
 
-        $billingType = strtolower($invoice->matter->billing_type ?? 'hourly');
-        $isHourly = $billingType === 'hourly';
-        $isFixedRate = $billingType === 'fixed_rate';
-        $isContingency = $billingType === 'contingency';
+        $clientName = $invoice->client->name
+            ?? $invoice->matter?->client?->name
+            ?? 'Valued Client';
 
+        $matterTitle = $invoice->matter?->name
+            ?? ($isSpecialBilling
+                ? 'Special Retainer / Recurring Billing' . ($invoice->period_key ? " ({$invoice->period_key})" : '')
+                : 'N/A');
+
+        $currency = $invoice->currency ?? $invoice->matter?->currency ?? 'PHP';
+        $symbol = $currency === 'PHP' ? '₱' : '$';
+
+        // Matter Billing Type Flags
+        $billingType = strtolower($invoice->matter?->billing_type ?? 'hourly');
+        $isHourly = ! $isSpecialBilling && $billingType === 'hourly';
+        $isFixedRate = ! $isSpecialBilling && $billingType === 'fixed_rate';
+        $isContingency = ! $isSpecialBilling && $billingType === 'contingency';
+
+        // Tier Calculations (for Hourly Matter Invoices)
         $billingPercentage = (float) ($invoice->billing_percentage ?? 100.00);
         $isDiscounted = $isHourly && $billingPercentage < 100;
         $isPremium = $isHourly && $billingPercentage > 100;
@@ -51,8 +64,14 @@
             default     => 'Standard',
         };
 
-        $ourFees = $invoice->total_amount / 1.12;
-        $vat = $ourFees * 0.12;
+        // Totals Calculations
+        if ($isSpecialBilling) {
+            $ourFees = (float) $invoice->items->sum('amount');
+            $vat = (float) $invoice->items->sum('vat_amount');
+        } else {
+            $ourFees = $invoice->total_amount / 1.12;
+            $vat = $ourFees * 0.12;
+        }
 
         $grossStandardFees = $isHourly
             ? $invoice->timeEntries->sum(fn ($e) => round((float) ($e->approved_hours ?? $e->hours) * (float) $e->hourly_rate, 2))
@@ -74,7 +93,7 @@
                 </div>
             </td>
             <td>
-                <div class="invoice-title">INVOICE</div>
+                <div class="invoice-title">{{ $isSpecialBilling ? 'STATEMENT OF ACCOUNT' : 'INVOICE' }}</div>
                 <div class="invoice-meta text-right">
                     <strong>Invoice No:</strong> {{ $invoice->invoice_number }}<br>
                     <strong>Date:</strong> {{ $invoice->issue_date->format('F d, Y') }}<br>
@@ -90,15 +109,15 @@
         <table class="details-table">
             <tr>
                 <td class="bold" style="width: 15%;">FOR:</td>
-                <td style="width: 35%;">{{ $invoice->matter->client->name ?? 'Valued Client' }}</td>
-                <td class="bold" style="width: 15%;">MATTER FILE:</td>
-                <td style="width: 35%;">{{ $invoice->matter->name }}</td>
+                <td style="width: 35%;">{{ $clientName }}</td>
+                <td class="bold" style="width: 15%;">{{ $isSpecialBilling ? 'ACCOUNT / FILE:' : 'MATTER FILE:' }}</td>
+                <td style="width: 35%;">{{ $matterTitle }}</td>
             </tr>
             <tr>
                 <td class="bold">ATTENTION:</td>
                 <td>Client Billing Department</td>
-                <td class="bold">AUTHORITY:</td>
-                <td>{{ $invoice->matter->authority ?? 'N/A' }}</td>
+                <td class="bold">{{ $isSpecialBilling ? 'BILLING PERIOD:' : 'AUTHORITY:' }}</td>
+                <td>{{ $isSpecialBilling ? ($invoice->period_key ?? 'Recurring') : ($invoice->matter?->authority ?? 'N/A') }}</td>
             </tr>
         </table>
     </div>
@@ -133,44 +152,73 @@
         </div>
     @endif
 
-    <!-- Professional Services Itemized Breakdown -->
-    <h4 style="margin-top: 30px; margin-bottom: 5px; text-transform: uppercase; font-size: 11px; color: #475569;">Professional Services Rendered ({{ $currency }})</h4>
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th style="width: 12%;">Date</th>
-                <th style="width: 15%;">Timekeeper</th>
-                <th style="width: {{ $isHourly ? '43%' : '63%' }};">Description of Services</th>
-                <th class="text-center" style="width: 10%;">Hours</th>
-                @if($isHourly)
-                    <th class="text-right" style="width: 10%;">Rate</th>
-                    <th class="text-right" style="width: 10%;">Amount</th>
-                @endif
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($invoice->timeEntries as $entry)
+    @if($isSpecialBilling)
+        <!-- Special Billing Schedule of Fees -->
+        <h4 style="margin-top: 30px; margin-bottom: 5px; text-transform: uppercase; font-size: 11px; color: #475569;">
+            Schedule of Fees ({{ $currency }})
+        </h4>
+        <table class="items-table">
+            <thead>
                 <tr>
-                    <td>{{ $entry->start_time->format('m/d/Y') }}</td>
-                    <td class="bold">{{ $entry->user->name ?? 'Lawyer' }}</td>
-                    <td>{{ $entry->formatted_description }}</td>
-                    <td class="text-center">{{ number_format($entry->approved_hours ?? $entry->hours, 2) }}</td>
+                    <th style="width: 55%;">Particulars / Description</th>
+                    <th class="text-center" style="width: 15%;">Tax Status</th>
+                    <th class="text-right" style="width: 15%;">Fee Amount</th>
+                    <th class="text-right" style="width: 15%;">12% VAT</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($invoice->items as $item)
+                    <tr>
+                        <td class="bold">{{ $item->description }}</td>
+                        <td class="text-center">{{ (float) $item->vat_amount > 0 ? 'VATable' : 'Non-VAT' }}</td>
+                        <td class="text-right bold">{{ $symbol }}{{ number_format($item->amount, 2) }}</td>
+                        <td class="text-right">{{ $symbol }}{{ number_format($item->vat_amount, 2) }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @else
+        <!-- Regular Matter Professional Services Itemized Breakdown -->
+        <h4 style="margin-top: 30px; margin-bottom: 5px; text-transform: uppercase; font-size: 11px; color: #475569;">
+            Professional Services Rendered ({{ $currency }})
+        </h4>
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width: 12%;">Date</th>
+                    <th style="width: 15%;">Timekeeper</th>
+                    <th style="width: {{ $isHourly ? '43%' : '63%' }};">Description of Services</th>
+                    <th class="text-center" style="width: 10%;">Hours</th>
                     @if($isHourly)
-                        @php
-                            $effectiveHrs = (float) ($entry->approved_hours ?? $entry->hours);
-                            $displayRate = $isPremium ? ((float) $entry->hourly_rate * ($billingPercentage / 100)) : (float) $entry->hourly_rate;
-                            $displayAmt = $isPremium ? round($effectiveHrs * $displayRate, 2) : (float) $entry->amount;
-                        @endphp
-                        <td class="text-right">{{ $symbol }}{{ number_format($displayRate, 2) }}</td>
-                        <td class="text-right bold">{{ $symbol }}{{ number_format($displayAmt, 2) }}</td>
+                        <th class="text-right" style="width: 10%;">Rate</th>
+                        <th class="text-right" style="width: 10%;">Amount</th>
                     @endif
                 </tr>
-            @endforeach
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach($invoice->timeEntries as $entry)
+                    <tr>
+                        <td>{{ $entry->start_time->format('m/d/Y') }}</td>
+                        <td class="bold">{{ $entry->user->name ?? 'Lawyer' }}</td>
+                        <td>{{ $entry->formatted_description }}</td>
+                        <td class="text-center">{{ number_format($entry->approved_hours ?? $entry->hours, 2) }}</td>
+                        @if($isHourly)
+                            @php
+                                $effectiveHrs = (float) ($entry->approved_hours ?? $entry->hours);
+                                $displayRate = $isPremium ? ((float) $entry->hourly_rate * ($billingPercentage / 100)) : (float) $entry->hourly_rate;
+                                $displayAmt = $isPremium ? round($effectiveHrs * $displayRate, 2) : (float) $entry->amount;
+                            @endphp
+                            <td class="text-right">{{ $symbol }}{{ number_format($displayRate, 2) }}</td>
+                            <td class="text-right bold">{{ $symbol }}{{ number_format($displayAmt, 2) }}</td>
+                        @endif
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
 
     <!-- Totals Calculations -->
-    <div class="totals-section" style="width: 45%;">
+    <div class="totals-section">
         <table class="totals-table">
             @if($isDiscounted)
                 <tr>
