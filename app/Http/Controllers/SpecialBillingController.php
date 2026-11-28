@@ -29,6 +29,7 @@ class SpecialBillingController extends Controller
             'client:id,name',
             'matter.client:id,name',
             'items.beneficiary:id,name',
+            'items.arrangement:id,type',
             'payments:id,invoice_id,amount,payment_date',
         ])
             ->where('billing_source', 'special_billing')
@@ -39,6 +40,24 @@ class SpecialBillingController extends Controller
             ->map(function ($inv) {
                 $paid = (float) $inv->payments->sum('amount');
                 $total = (float) $inv->total_amount;
+                $paidRatio = $total > 0 ? min(1, $paid / $total) : 0;
+
+                $items = $inv->items->map(function ($item) {
+                    $type = $item->arrangement?->type ?? $this->inferItemType($item->description);
+                    $gross = round((float) $item->amount + (float) $item->vat_amount, 2);
+
+                    return [
+                        'id'                      => $item->id,
+                        'type'                    => $type,
+                        'type_label'              => RecurringArrangement::TYPES[$type] ?? 'Special Fee',
+                        'description'             => $item->description,
+                        'beneficiary_name'        => $item->beneficiary?->name,
+                        'amount'                  => (float) $item->amount,
+                        'vat_amount'              => (float) $item->vat_amount,
+                        'gross_amount'            => $gross,
+                        'beneficiary_remitted_at' => $item->beneficiary_remitted_at?->toDateString(),
+                    ];
+                });
 
                 return [
                     'id'              => $inv->id,
@@ -53,14 +72,9 @@ class SpecialBillingController extends Controller
                     'total_amount'    => $total,
                     'total_payments'  => $paid,
                     'balance_due'     => max(0, round($total - $paid, 2)),
-                    'items'           => $inv->items->map(fn ($item) => [
-                        'id'                      => $item->id,
-                        'description'             => $item->description,
-                        'beneficiary_name'        => $item->beneficiary?->name,
-                        'amount'                  => (float) $item->amount,
-                        'vat_amount'              => (float) $item->vat_amount,
-                        'beneficiary_remitted_at' => $item->beneficiary_remitted_at?->toDateString(),
-                    ]),
+                    'unpaid_ratio'    => round(1 - $paidRatio, 6),
+                    'types'           => $items->pluck('type')->unique()->values(),
+                    'items'           => $items,
                 ];
             });
 
@@ -78,6 +92,18 @@ class SpecialBillingController extends Controller
             'matters'      => $matters,
             'lawyers'      => $lawyers,
         ]);
+    }
+
+    private function inferItemType(?string $description): string
+    {
+        $desc = strtolower((string) $description);
+        if (str_contains($desc, 'director')) {
+            return 'directors_fee';
+        }
+        if (str_contains($desc, 'secondment')) {
+            return 'secondment';
+        }
+        return 'retainer';
     }
 
     public function store(Request $request)
